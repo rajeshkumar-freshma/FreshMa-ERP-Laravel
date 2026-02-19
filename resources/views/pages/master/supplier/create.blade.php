@@ -1,0 +1,278 @@
+<x-default-layout>
+    <!--begin::Form-->
+    @section('_toolbar')
+        @include('pages.partials.common-toolbar', [
+            'title' => 'Supplier',
+            'menu_1_link' => route('admin.supplier.index'),
+            'menu_2' => 'Add Supplier',
+        ])
+    @endsection
+    <form id="add_supplier_form" method="POST" action="{{ route('admin.supplier.store') }}"
+        class="form d-flex flex-column flex-lg-row" enctype="multipart/form-data">
+        @csrf
+
+        <!--begin::Aside column-->
+        <div class="d-flex flex-column gap-7 gap-lg-5 w-100 w-lg-300px mb-7 me-lg-10">
+            <!--begin::Thumbnail settings-->
+            <div class="card card-flush py-1">
+                <!--begin::Card header-->
+                <div class="card-header">
+                    <!--begin::Card title-->
+                    <div class="card-title">
+                        <h2 class="">{{ __('Image') }}</h2>
+                    </div>
+                    <!--end::Card title-->
+                </div>
+                <!--end::Card header-->
+                <!--begin::Card body-->
+                <div class="card-body text-center pt-0">
+                    <!--begin::Image input-->
+                    <!--begin::Image input placeholder-->
+                    {{-- <style>.image-input-placeholder { background-image: url('assets/media/svg/files/blank-image.svg'); } [data-bs-theme="dark"] .image-input-placeholder { background-image: url('assets/media/svg/files/blank-image-dark.svg'); }</style> --}}
+                    <!--end::Image input placeholder-->
+                    <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-1"
+                        data-kt-image-input="true">
+                        <!--begin::Preview existing avatar-->
+                        <div class="image-input-wrapper w-150px h-150px"></div>
+                        <!--end::Preview existing avatar-->
+                        <!--begin::Label-->
+                        <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                            data-kt-image-input-action="change" data-bs-toggle="tooltip" title="Change avatar">
+                            <i class="bi bi-pencil-fill fs-7"></i>
+                            <!--begin::Inputs-->
+                            <input type="file" name="image" accept=".png, .jpg, .jpeg" />
+                            <!--end::Inputs-->
+                        </label>
+                        <!--end::Label-->
+                        <!--begin::Cancel-->
+                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                            data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="Cancel avatar">
+                            <i class="bi bi-x fs-2"></i>
+                        </span>
+                        <!--end::Cancel-->
+                        <!--begin::Remove-->
+                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                            data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="Remove avatar">
+                            <i class="bi bi-x fs-2"></i>
+                        </span>
+                        <!--end::Remove-->
+                    </div>
+                    <!--end::Image input-->
+                    <!--begin::Description-->
+                    <div class="text-muted fs-7">Set the product thumbnail image. Only *.png, *.jpg and *.jpeg image
+                        files are accepted</div>
+                    <!--end::Description-->
+                </div>
+                <!--end::Card body-->
+            </div>
+            <!--end::Thumbnail settings-->
+
+            <!--begin::Status-->
+            <div class="card card-flush py-1">
+                <!--begin::Card header-->
+                <div class="card-header">
+                    <!--begin::Card title-->
+                    <div class="card-title">
+                        <h2 class="required">{{ __('Status') }}</h2>
+                    </div>
+                    <!--end::Card title-->
+                </div>
+                <!--end::Card header-->
+                <!--begin::Card body-->
+                <div class="card-body pt-0">
+                    <div class="input-group input-group-sm flex-nowrap">
+                        <span class="input-group-text border-0"><i class="fas fa-home"></i></span>
+                        <div class="overflow-hidden flex-grow-1">
+                            <select name="status" id="status" aria-label="{{ __('Select Status') }}"
+                                data-control="select2" data-placeholder="{{ __('Select Status..') }}"
+                                class="form-select form-select-solid" data-allow-clear="true" data-hide-search="true"
+                                required>
+                                <option value="">{{ __('Select Status..') }}</option>
+                                @foreach (config('app.statusinactive') as $key => $value)
+                                    <option data-kt-flag="{{ $value['value'] }}" value="{{ $value['value'] }}"
+                                        {{ $value['value'] == old('status', 1) ? 'selected' : '' }}>
+                                        {{ $value['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    @if ($errors->has('status'))
+                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                            <strong>{{ $errors->first('status') }}</strong>
+                        </span>
+                    @endif
+                </div>
+                <!--end::Card body-->
+            </div>
+            <!--end::Status-->
+        </div>
+
+        <!--begin::Main column-->
+        <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+            <!--begin:::Tabs-->
+            <ul class="nav nav-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-4 fw-semibold mb-n2">
+                <!--end::Aside column-->
+
+                <!--begin:::Tab item-->
+                <li class="nav-item">
+                    <a class="nav-link text-active-primary pb-4 active add_supplier_general" data-bs-toggle="tab"
+                        href="#add_supplier_general">General</a>
+                </li>
+                <!--end:::Tab item-->
+                <!--begin:::Tab item-->
+                <li class="nav-item">
+                    <a class="nav-link text-active-primary pb-4" data-bs-toggle="tab"
+                        href="#add_supplier_advanced">Advanced</a>
+                </li>
+                <!--end:::Tab item-->
+                <!--begin:::Tab item-->
+                <li class="nav-item">
+                    <a class="nav-link text-active-primary pb-4" data-bs-toggle="tab"
+                        href="#add_supplier_salary_detail">Salary Details</a>
+                </li>
+                <!--end:::Tab item-->
+            </ul>
+            <!--end:::Tabs-->
+            <!--begin::Tab content-->
+            <div class="tab-content">
+                <!--begin::Tab pane-->
+                <div class="tab-pane fade show active" id="add_supplier_general" role="tab-panel">
+                    <div class="d-flex flex-column gap-7 gap-lg-10">
+                        <!--begin::General options-->
+                        <div class="card card-flush py-4">
+                            <!--begin::Card header-->
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <h2>General</h2>
+                                </div>
+                            </div>
+                            <!--end::Card header-->
+                            <!--begin::Card body-->
+                            <div class="card-body pt-0">
+                                <!--begin::Input group-->
+
+                                <div class="mb-5">
+                                    <label for="first_name" class="required form-label">{{ __('First Name') }}</label>
+                                    <input type="text" name="first_name" value="{{ old('first_name') }}"
+                                        class="form-control form-control-solid" id="first_name"
+                                        placeholder="Enter First Name" required />
+                                    @if ($errors->has('first_name'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('first_name') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="mb-5">
+                                    <label for="last_name" class="form-label">{{ __('Last Name') }}</label>
+                                    <input type="text" name="last_name" value="{{ old('last_name') }}"
+                                        class="form-control form-control-solid" id="last_name"
+                                        placeholder="Enter Last Name" />
+                                    @if ($errors->has('last_name'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('last_name') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="mb-5">
+                                    @php
+                                        $user_code = CommonComponent()->invoice_no('user_code', 'SUP-');
+                                    @endphp
+                                    <label for="user_code" class="form-label required">{{ __('User Code') }}</label>
+                                    <input type="text" name="user_code"
+                                        value="{{ old('user_code', $user_code) }}"
+                                        class="form-control form-control-solid" id="user_code"
+                                        placeholder="Enter User Code" required />
+                                    @if ($errors->has('user_code'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('user_code') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="mb-5">
+                                    <label for="email" class="form-label">{{ __('Email') }}</label>
+                                    <input type="email" name="email" value="{{ old('email') }}"
+                                        class="form-control form-control-solid" id="email"
+                                        placeholder="Enter Email" />
+                                    @if ($errors->has('email'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('email') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="mb-5">
+                                    <label for="phone_number"
+                                        class="form-label required">{{ __('Phone Number') }}</label>
+                                    <input type="text" name="phone_number" value="{{ old('phone_number') }}"
+                                        class="form-control form-control-solid" id="phone_number"
+                                        placeholder="Enter Phone Number" maxlength="10" onkeypress="return /[0-9]/i.test(event.key)" required />
+                                    @if ($errors->has('phone_number'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('phone_number') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="mb-5">
+                                    <label for="password" class="form-label required">{{ __('Password') }}</label>
+                                    <input type="password" name="password" value="{{ old('password') }}"
+                                        class="form-control form-control-solid" id="password"
+                                        placeholder="Enter Password" required />
+                                    @if ($errors->has('password'))
+                                        <span class="fv-plugins-message-container invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('password') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+                                <!--end::Input group-->
+                            </div>
+                            <!--end::Card header-->
+                        </div>
+                        <!--end::General options-->
+                    </div>
+                </div>
+                <!--end::Tab pane-->
+                @include('pages.master.supplier.advanced')
+                {{-- @if ($errors->has('salary_type') || $errors->has('amount') || $errors->has('amount_type'))
+                    <div class="alert alert-danger">{{ $errors->first() }}</div>
+                @endif --}}
+                @include('pages.master.supplier.supplier_salary', ['data' => old('salary_details')])
+            </div>
+            <!--end::Tab content-->
+            @include('pages.partials.form_footer', [
+                'is_save' => true,
+                'back_url' => route('admin.supplier.index'),
+            ])
+        </div>
+        <!--end::Main column-->
+    </form>
+    <!--end::Form-->
+    @section('scripts')
+        @include('pages.partials.state_city_script', [
+            'country_id' => old('country_id'),
+            'state_id' => old('state_id'),
+            'city_id' => old('city_id'),
+        ])
+        @include('pages.partials.date_picker')
+        @include('pages.master.supplier.script', ['data' => old('salary_details')])
+        <script>
+            // Wait for the DOM to be fully loaded
+            document.addEventListener("DOMContentLoaded", function() {
+                // Check if any of the specified errors exist
+                if ({{ $errors->has('salary_type') ? 'true' : 'false' }} ||
+                    {{ $errors->has('amount') ? 'true' : 'false' }} ||
+                    {{ $errors->has('amount_type') ? 'true' : 'false' }}) {
+                    // Find the tab link corresponding to the tab you want to open
+                    var tabLink = document.querySelector('a[href="#add_supplier_salary_detail"]');
+                    // Trigger a click event on the tab link
+                    if (tabLink) {
+                        tabLink.click();
+                    }
+                }
+            });
+        </script>
+    @endsection
+</x-default-layout>

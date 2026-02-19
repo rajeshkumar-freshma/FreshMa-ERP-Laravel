@@ -1,0 +1,16 @@
+<!--begin::Action--->
+<td class="no-wrap d-flex">
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            Action
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ route('admin.app-menu-mapping.edit', $model->id) }}"><i class="fa fa-pencil"></i> Edit</a></li>
+            <!-- <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item btn btn-sm btn-danger" href="#" data-destroy="{{ route('admin.app-menu-mapping.destroy', $model->id) }}"><i class="fa fa-trash"></i> Delete</a></li> -->
+        </ul>
+    </div>
+</td>
+<!--end::Action--->
