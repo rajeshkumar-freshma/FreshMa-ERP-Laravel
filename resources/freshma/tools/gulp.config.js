@@ -195,7 +195,7 @@ const gulpConfig = {
                             ],
                             scripts: [
                                 "{$config.path.node_modules}/@yaireo/tagify/dist/tagify.polyfills.min.js",
-                                "{$config.path.node_modules}/@yaireo/tagify/dist/tagify.min.js",
+                                "{$config.path.node_modules}/@yaireo/tagify/dist/tagify.js",
                             ],
                         },
                         toastr: {
