@@ -49,10 +49,7 @@ class WarehouseController extends Controller
         if ($request->is_default == 1 && $request->status == 0) {
             return back()->with('warning', "Your Couldn't disable and default in a same action.");
         } elseif ($request->is_default == 1) {
-            $warehousedefaultcheck = Warehouse::where('is_default', 1)->get();
-            if (count($warehousedefaultcheck) > 0) {
-                Warehouse::where('is_default', 1)->update(['is_default', 0]);
-            }
+            Warehouse::where('is_default', 1)->update(['is_default' => 0]);
         }
 
         $warehouse = new Warehouse();
@@ -133,19 +130,14 @@ class WarehouseController extends Controller
         $slug = commoncomponent()->slugCreate($request->name, $request->slug);
 
         if ($request->is_default == 0) {
-            $warehousedefaultcheck = Warehouse::where('id', $id)->where('is_default', 1)->get();
-            if (count($warehousedefaultcheck) == 1) {
+            $isCurrentDefault = Warehouse::where('id', $id)->where('is_default', 1)->exists();
+            if ($isCurrentDefault) {
                 return back()->with('warning', "Your Couldn't disable the default branch");
             }
         }
 
         if ($request->is_default == 1) {
-            $warehousedefaultcheck = Warehouse::where('is_default', 1)->get();
-            if (count($warehousedefaultcheck) > 0) {
-                foreach ($warehousedefaultcheck as $warehouse) {
-                    $warehouse->update(['is_default' => 0]);
-                }
-            }
+            Warehouse::where('is_default', 1)->update(['is_default' => 0]);
         }
 
         $warehouse = Warehouse::findOrFail($id);
@@ -203,7 +195,6 @@ class WarehouseController extends Controller
         if (isset($request->status_value)) {
             $warehouse_id = $request->warehouse_id;
             $status_value = $request->status_value;
-            Log::info($status_value);
             Warehouse::where('id', $warehouse_id)->update(['status' => $status_value]);
             return response()->json([
                 'status' => 200,

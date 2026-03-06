@@ -30,7 +30,7 @@ class PaymentTypeDataTable extends DataTable
             })
             ->addColumn('status', function (PaymentType $model) {
                 $status = $model->status;
-                return view('pages.partials.statuslabel', compact('status'));
+                return view('pages.partials.status_toggle_master', ['model' => $model, 'entity' => 'payment_type']);
             })
             ->addColumn('payment_category', function (PaymentType $model) {
                 $payment_category = $model->payment_category;
@@ -53,6 +53,19 @@ class PaymentTypeDataTable extends DataTable
     public function query(PaymentType $model): QueryBuilder
     {
         $query = $model->newQuery();
+
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -68,24 +81,27 @@ class PaymentTypeDataTable extends DataTable
 
         // Check if the user is authenticated and has permission to create
         if (Auth::check() && Auth::user()->can('Payment Type Create')) {
-            $createButton[] = Button::make('create');
+            $createButton[] = Button::make('create')->className('btn btn-success btn-xs btn-sm');
 
         }
 
         return $this->builder()
             ->setTableId('paymenttype-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#paymenttype-table-date-from").val(); data.date_to = $("#paymenttype-table-date-to").val(); data.status = $("#paymenttype-table-status-filter").val();')
             ->stateSave(false)
-            ->responsive()
-            ->autoWidth(true)
+            ->responsive(false)
+            ->autoWidth(false)
             ->parameters([
+                'processing' => true,
+                'serverSide' => true,
                 'scrollX' => true,
+                'deferRender' => true,
+                'searchDelay' => 350,
                 'drawCallback' => 'function() { KTMenu.createInstances(); }',
             ])
-        // ->selectStyleSingle()
-            ->addTableClass('align-middle table-row-dashed fs-6 gy-5')
-            ->dom('Bfrtip')
+            ->addTableClass('align-middle table-row-dashed table-sm fs-7 gy-1 text-nowrap')
+            ->dom("<'d-flex justify-content-between mb-3'B>rtip")
             ->buttons($createButton);
         // ->buttons([
         //     Button::make('create'),
@@ -127,3 +143,6 @@ class PaymentTypeDataTable extends DataTable
         return 'PaymentType_' . date('YmdHis');
     }
 }
+
+
+

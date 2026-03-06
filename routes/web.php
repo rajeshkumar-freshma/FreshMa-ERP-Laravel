@@ -33,14 +33,14 @@ Route::get('/', function () {
 
 Route::get('/privacy-policy', [DashboardController::class, 'privacyPolicies'])->name('privacyPolicies');
 
-Route::prefix(env('SUPPLIER_PREFIX'))->group(function () {
+Route::prefix(config('app.supplier_prefix'))->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 
-    Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:supplier-login');
 });
 
 
-Route::prefix(env('SUPPLIER_PREFIX'))->middleware(['auth'])->group(function () {
+Route::prefix(config('app.supplier_prefix'))->middleware(['auth'])->group(function () {
 
     Route::get('/', [HomeController::class, 'home'])->name('dashboard');
 

@@ -49,7 +49,7 @@ class MachineDetailController extends Controller
         $machine_details = new MachineData();
         $machine_details->MachineName = $request->machine_name;
         $machine_details->store_id = $request->store_id;
-        $machine_details->Slno = $request->store_id ?? '';
+        $machine_details->Slno = $request->store_id;
         $machine_details->Port = $request->port;
         $machine_details->IPAddress = $request->ip_address;
         $machine_details->Capacity = $request->capacity;

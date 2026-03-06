@@ -16,9 +16,9 @@ class ItemTypesTableSeeder extends Seeder
     public function run()
     {
 
-        DB::table('item_types')->delete();
+        DB::table('item_types')->truncate();
 
-        DB::unprepared('SET IDENTITY_INSERT item_types ON');
+        // DB::unprepared('SET IDENTITY_INSERT item_types ON');
 
         DB::beginTransaction();
 
@@ -145,7 +145,7 @@ class ItemTypesTableSeeder extends Seeder
             ),
         ));
 
-        DB::unprepared('SET IDENTITY_INSERT item_types OFF');
+        // DB::unprepared('SET IDENTITY_INSERT item_types OFF');
 
         DB::commit();
     }

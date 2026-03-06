@@ -15,7 +15,7 @@ class ProductFishCuttingMappingSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('fish_cutting_product_maps')->delete();
+        DB::table('fish_cutting_product_maps')->truncate();;
         // Dummy data for fish cutting mapping
         $fishCuttingData = [
             'main_product_id' => 1, // Replace with a valid product ID from your products table

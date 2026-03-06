@@ -10,7 +10,6 @@ use App\Models\Admin;
 use App\Models\CashPaidToOffice;
 use App\Models\CashRegister;
 use App\Models\CashRegisterTransaction;
-use App\Models\Department;
 use App\Models\PaymentTransaction;
 use App\Models\PaymentType;
 use App\Models\SalesOrder;
@@ -307,7 +306,7 @@ class StoreCashRegisterController extends Controller
     public function destroy($id)
     {
         try {
-            Department::findOrFail($id)->delete();
+            CashRegister::findOrFail($id)->delete();
 
             return redirect()->route('admin.cash-register.index')->with('success', 'Cash register Deleted Successfully');
         } catch (\Exception $e) {

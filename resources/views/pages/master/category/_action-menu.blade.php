@@ -12,7 +12,7 @@
 @if (isset($model))
     <td class="no-wrap d-flex">
         <div class="btn-group">
-            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 Action
             </button>
             <ul class="dropdown-menu">
@@ -26,3 +26,4 @@
     </td>
 @endif
 <!--end::Action--->
+

@@ -94,7 +94,10 @@ class StoreIndentReqestController extends Controller
 
     public function storeindentrequestdetails(Request $request)
     {
-        // try {
+        $request->validate([
+            'store_indent_request_id' => ['required', 'integer'],
+        ]);
+
         $store_indent_request_id = $request->store_indent_request_id;
         $indentdetails = StoreIndentRequest::with('store_data')
             ->with(['warehouse' => function ($query) {
@@ -124,6 +127,14 @@ class StoreIndentReqestController extends Controller
 
     public function storeindentrequeststore(Request $request)
     {
+        $request->validate([
+            'store_id' => ['required', 'integer'],
+            'request_code' => ['required', 'string', 'max:100'],
+            'request_date' => ['required', 'date'],
+            'expected_date' => ['required', 'date'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;
@@ -224,6 +235,16 @@ class StoreIndentReqestController extends Controller
 
     public function storeindentrequestupdate(Request $request)
     {
+        $request->validate([
+            'store_indent_request_id' => ['required', 'integer'],
+            'store_id' => ['required', 'integer'],
+            'request_code' => ['required', 'string', 'max:100'],
+            'request_date' => ['required', 'date'],
+            'expected_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;
@@ -385,6 +406,31 @@ class StoreIndentReqestController extends Controller
         //         'message' => 'There are some Technical Issue, Kindly contact Admin.',
         //     ]);
         // }
+    }
+
+    public function storeindentrequestedit(Request $request)
+    {
+        $request->validate([
+            'store_indent_request_id' => ['required', 'integer'],
+        ]);
+
+        $storeIndentRequest = StoreIndentRequest::with('store_data')
+            ->with(['warehouse' => function ($query) {
+                $query->select('id', 'name', 'code');
+            }])
+            ->with(['created_by_details' => function ($query) {
+                $query->select('id', 'first_name', 'last_name', 'user_type', 'status');
+            }])
+            ->findOrFail($request->store_indent_request_id);
+
+        $productDetails = StoreIndentRequestDetail::where('store_indent_request_id', $request->store_indent_request_id)->get();
+
+        return response()->json([
+            'status' => 200,
+            'store_indent_requests' => $storeIndentRequest,
+            'store_product_details' => $productDetails,
+            'message' => 'Store Indent Request fetched successfully.',
+        ]);
     }
 
     public function convertdistribution($indent_request)

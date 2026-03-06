@@ -17,7 +17,7 @@ class IncomeExpenseTypesTableSeeder extends Seeder
     public function run()
     {
 
-        DB::table('income_expense_types')->delete();
+        DB::table('income_expense_types')->truncate();;
 
         DB::beginTransaction();
 

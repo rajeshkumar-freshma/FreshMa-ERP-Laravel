@@ -50,8 +50,23 @@ class FishCuttingProductMapDataTable extends DataTable
     public function query(FishCuttingProductMap $model): QueryBuilder
     {
         $query = $model->newQuery();
+
+        // Status filter
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        // Date from filter
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        // Date to filter
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
-        // return $model->newQuery()->orderBy('id', 'DESC');
     }
 
     /**
@@ -70,7 +85,7 @@ class FishCuttingProductMapDataTable extends DataTable
         return $this->builder()
             ->setTableId('fishcuttingproductmap-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#fishcuttingproductmap-table-date-from").val(); data.date_to = $("#fishcuttingproductmap-table-date-to").val(); data.status = $("#fishcuttingproductmap-table-status-filter").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

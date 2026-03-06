@@ -15,7 +15,7 @@ class EmailTemplateSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('email_templates')->delete();
+        DB::table('email_templates')->truncate();;
 
         DB::beginTransaction();
 

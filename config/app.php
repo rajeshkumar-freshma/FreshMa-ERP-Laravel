@@ -55,6 +55,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'admin_prefix' => env('ADMIN_PREFIX', 'rrkadminmanager'),
+
+    'supplier_prefix' => env('SUPPLIER_PREFIX', 'rrksupplier'),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

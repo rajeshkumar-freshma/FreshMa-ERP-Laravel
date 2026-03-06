@@ -13,8 +13,8 @@
     <td class="no-wrap d-flex">
         <!-- Example single danger button -->
         <div class="btn-group">
-            @if (auth()->user()->can('Warehouse Edit') || auth()->user()->can('Warehouse View'))
-                <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+            @if (auth()->user()->can('Store Edit') || auth()->user()->can('Store View'))
+                <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     Action
                 </button>
@@ -37,3 +37,4 @@
     </td>
 @endif
 <!--end::Action--->
+

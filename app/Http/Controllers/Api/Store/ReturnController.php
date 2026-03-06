@@ -716,6 +716,10 @@ class ReturnController extends Controller
 
     public function returnpaymenttransactionedit(Request $request)
     {
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+        ]);
+
         try {
             $transaction_id = $request->transaction_id;
 
@@ -728,7 +732,6 @@ class ReturnController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error($e);
-            DB::rollback();
             return response()->json([
                 'status' => 400,
                 'message' => 'Data not found.',
@@ -738,12 +741,20 @@ class ReturnController extends Controller
 
     public function returnpaymenttransactionupdate(Request $request)
     {
-        DB::beginTransaction();
-        // try {
-        $transaction_id = $request->transaction_id;
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+            'payment_details' => ['required', 'string'],
+        ]);
 
-        if (isset($request->payment_details)) {
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
             $payment_details = json_decode($request->payment_details);
+            if (!is_array($payment_details) || count($payment_details) === 0) {
+                throw new \InvalidArgumentException('Invalid payment_details payload.');
+            }
+
+            $payment_transaction = null;
             foreach ($payment_details as $key => $payment_detail) {
                 $payment_transaction = PaymentTransaction::findOrFail($transaction_id);
                 $payment_transaction->payment_type_id = (int) $payment_detail->payment_type_id;
@@ -753,91 +764,87 @@ class ReturnController extends Controller
                 $payment_transaction->note = @$payment_detail->note;
                 $payment_transaction->save();
             }
+
+            if (isset($request->payment_transaction_documents) && count($request->payment_transaction_documents) > 0 && $request->file('payment_transaction_documents')) {
+                CommonComponent::payment_transaction_documents($request->file('payment_transaction_documents'), 2, $payment_transaction->id); // 2=> Sales
+            }
+
+            $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($payment_transaction->reference_id);
+
+            $paid_amount = $sales_return_details->return_order_transactions->sum('amount');
+
+            $total_amount = $sales_return_details->total_amount;
+
+            if ($paid_amount == 0) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
+                $sales_return_details->save();
+            } elseif ($paid_amount < $total_amount) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
+                $sales_return_details->save();
+            } elseif ($paid_amount >= $total_amount) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $sales_return_details->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'data' => $sales_return_details,
+                'message' => 'Transaction Updated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Transaction update failed.',
+            ]);
         }
-
-        Log::info($request->payment_transaction_documents);
-        if (isset($request->payment_transaction_documents) && count($request->payment_transaction_documents) > 0 && $request->file('payment_transaction_documents')) {
-            CommonComponent::payment_transaction_documents($request->file('payment_transaction_documents'), 2, $payment_transaction->id); // 2=> Sales
-        }
-
-        $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($payment_transaction->reference_id);
-
-        $paid_amount = $sales_return_details->return_order_transactions->sum('amount');
-
-        $total_amount = $sales_return_details->total_amount;
-
-        if ($paid_amount == 0) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
-            $sales_return_details->save();
-        } elseif ($paid_amount < $total_amount) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
-            $sales_return_details->save();
-        } elseif ($paid_amount >= $total_amount) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
-            $sales_return_details->save();
-        }
-
-        DB::commit();
-
-        $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($payment_transaction->reference_id);
-
-        return response()->json([
-            'status' => 200,
-            'data' => $sales_return_details,
-            'message' => 'Transaction Updated successfully.',
-        ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
     }
 
     public function returnpaymenttransactiondelete(Request $request)
     {
-        // try {
-        $transaction_id = $request->transaction_id;
-
-        $sales_order_return_id = $request->sales_order_return_id;
-
-        PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
-
-        PaymentTransaction::destroy($transaction_id);
-
-        $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($sales_order_return_id);
-
-        $paid_amount = $sales_return_details->return_order_transactions->sum('amount');
-
-        $total_amount = $sales_return_details->total_amount;
-
-        if ($paid_amount == 0) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
-            $sales_return_details->save();
-        } elseif ($paid_amount < $total_amount) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
-            $sales_return_details->save();
-        } elseif ($paid_amount >= $total_amount) {
-            $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
-            $sales_return_details->save();
-        }
-
-        $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($sales_order_return_id);
-
-        return response()->json([
-            'status' => 200,
-            'datas' => $sales_return_details,
-            'message' => 'Payment Transaction Deleted Successfully.',
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+            'sales_order_return_id' => ['required', 'integer'],
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
+
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
+            $sales_order_return_id = $request->sales_order_return_id;
+
+            PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
+            PaymentTransaction::destroy($transaction_id);
+
+            $sales_return_details = SalesOrderReturn::with('return_order_transactions')->findOrFail($sales_order_return_id);
+            $paid_amount = $sales_return_details->return_order_transactions->sum('amount');
+            $total_amount = $sales_return_details->total_amount;
+
+            if ($paid_amount == 0) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
+                $sales_return_details->save();
+            } elseif ($paid_amount < $total_amount) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
+                $sales_return_details->save();
+            } elseif ($paid_amount >= $total_amount) {
+                $sales_return_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $sales_return_details->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'datas' => $sales_return_details,
+                'message' => 'Payment Transaction Deleted Successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Unable to delete transaction.',
+            ]);
+        }
     }
 }

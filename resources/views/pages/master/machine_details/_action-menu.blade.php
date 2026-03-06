@@ -23,7 +23,7 @@
     <td class="no-wrap d-flex">
         <div class="btn-group">
             @if (auth()->user()->can('Supplier Edit') || auth()->user()->can('Supplier View'))
-                <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     Action
                 </button>
@@ -42,3 +42,4 @@
     </td>
 @endif
 <!--end::Action--->
+

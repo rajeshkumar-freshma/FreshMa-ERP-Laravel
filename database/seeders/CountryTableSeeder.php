@@ -15,11 +15,11 @@ class CountryTableSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('countries')->delete();
+        DB::table('countries')->truncate();
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT countries ON');
+        // DB::unprepared('SET IDENTITY_INSERT countries ON');
 
         DB::table('countries')->insert([
             [
@@ -2735,7 +2735,8 @@ class CountryTableSeeder extends Seeder
             ],
         ]);
 
-        DB::unprepared('SET IDENTITY_INSERT countries OFF');
+        // DB::unprepared('SET IDENTITY_INSERT countries OFF');
+        
 
         DB::commit();
     }

@@ -1,20 +1,18 @@
 <!--begin::Action--->
 @if (isset($imageData))
-    <td>
-        @if ($imageData != null)
-            <img src="{{ $imageData }}" style="width: 50px; height : 50px;">
-        @else
-            -
-        @endif
-    </td>
+    @if ($imageData != null)
+        <img src="{{ $imageData }}" style="width: 50px; height : 50px;">
+    @else
+        -
+    @endif
 @endif
 
 @if (isset($model))
-    <td class="no-wrap d-flex">
+
         <!-- Example single danger button -->
         <div class="btn-group">
             @if (auth()->user()->can('Employee Edit') || auth()->user()->can('Employee View'))
-                <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     Action
                 </button>
@@ -34,6 +32,6 @@
                 </ul>
             @endif
         </div>
-    </td>
+
 @endif
 <!--end::Action--->

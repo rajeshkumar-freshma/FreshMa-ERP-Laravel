@@ -97,6 +97,18 @@ class SalesOrderDataTable extends DataTable
             });
         }
 
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -117,7 +129,7 @@ class SalesOrderDataTable extends DataTable
         return $this->builder()
             ->setTableId('salesorder-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#salesorder-table-date-from").val(); data.date_to = $("#salesorder-table-date-to").val(); data.status = $("#salesorder-table-status-filter").val(); data.bill_no = $("#bill_no").val(); data.store_id = $("#store_id").val(); data.from_date = $("#from_date").val(); data.to_date = $("#to_date").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

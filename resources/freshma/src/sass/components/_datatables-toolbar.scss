@@ -1,0 +1,483 @@
+/**
+ * DataTable Toolbar & Filter Styles
+ * Global reusable styles for all DataTable toolbars with filters
+ * Used across all master listing pages (warehouse, category, unit, etc.)
+ */
+
+// Base Toolbar Styling
+.datatable-toolbar {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  margin-bottom: 1rem;
+}
+
+// Main toolbar row (always visible)
+.datatable-toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+
+  .btn-toolbar {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+
+    .btn {
+      white-space: nowrap;
+    }
+  }
+
+  .datatable-toolbar-main + .datatable-filter-row + .datatable-filter-row .datatable-toolbar-main > div:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+// DataTable button styling when moved into custom toolbar containers
+.dataTables_wrapper .dt-buttons .dt-button,
+[id$="-dt-buttons"] .dt-button,
+[id$="-dt-buttons"] .dt-buttons .dt-button {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-radius: 0.25rem;
+  color: #fff;
+  background-color: var(--bs-success, #198754);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dataTables_wrapper .dt-buttons .buttons-create,
+[id$="-dt-buttons"] .buttons-create,
+[id$="-dt-buttons"] .dt-button.btn.btn-success,
+[id$="-dt-buttons"] .btn.btn-success {
+  background-color: var(--bs-success, #198754) !important;
+  color: #fff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.2) !important;
+}
+
+.dataTables_wrapper .dt-buttons .buttons-create i,
+[id$="-dt-buttons"] .buttons-create i,
+[id$="-dt-buttons"] .dt-button.btn.btn-success i,
+[id$="-dt-buttons"] .btn.btn-success i {
+  color: #fff !important;
+}
+
+.dataTables_wrapper .dt-buttons .buttons-create:hover,
+[id$="-dt-buttons"] .buttons-create:hover,
+[id$="-dt-buttons"] .dt-button.btn.btn-success:hover,
+[id$="-dt-buttons"] .btn.btn-success:hover {
+  filter: brightness(0.95) !important;
+  color: #fff !important;
+}
+
+// Filter row (search, status, dates)
+.datatable-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  width: 100%;
+  overflow-x: auto;
+
+  > div {
+    flex-shrink: 0;
+  }
+
+  > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  [id$="-dt-buttons"] {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  input,
+  select {
+    font-size: 0.875rem;
+  }
+
+  .input-group {
+    flex-wrap: nowrap;
+  }
+
+  .input-group-text {
+    background: transparent;
+    border-color: #e9ecef;
+    font-size: 0.775rem;
+  }
+
+  input[type="text"],
+  input[type="search"] {
+    border-color: #e9ecef;
+
+    &::placeholder {
+      color: #a1acb8;
+      font-size: 0.8rem;
+    }
+
+    &:focus {
+      border-color: #667eea;
+      background-color: rgba(102, 126, 234, 0.05);
+    }
+  }
+
+  select {
+    border-color: #e9ecef;
+    background-color: white;
+
+    &:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+  }
+}
+
+// Toggle button styling
+.datatable-filter-toggle,
+[id$="-filter-toggle"] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f8f9fa;
+  color: #0d6efd;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+  min-width: 36px;
+  height: 36px;
+
+  &:hover {
+    background: #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  i {
+    font-size: 0.85rem;
+    transition: transform 0.3s ease;
+  }
+
+  &.collapsed i {
+    transform: rotate(0deg);
+  }
+}
+
+// Page length selector
+[id$="-page-length"],
+.datatable-page-length {
+  min-width: 60px;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e9ecef;
+  background-color: white;
+
+  &:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+  }
+}
+
+// Desktop (lg and up) - everything in one visual flow
+@media (min-width: 992px) {
+  .datatable-toolbar {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  [id$="-filter-toggle"],
+  .datatable-filter-toggle {
+    display: none !important;
+  }
+
+  .datatable-toolbar-main {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+  }
+
+  .datatable-filter-row {
+    flex: 1;
+    margin-bottom: 0;
+    gap: 0.75rem;
+    flex-wrap: nowrap !important;
+
+    input,
+    select {
+      font-size: 0.875rem;
+    }
+
+    [id$="-date-from"],
+    [id$="-date-to"] {
+      min-width: 100px;
+    }
+  }
+}
+
+// Tablet (md and up) - gap reduction
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .datatable-toolbar-main,
+  .datatable-filter-row {
+    gap: 0.5rem;
+  }
+
+  .datatable-toolbar-main input,
+  .datatable-toolbar-main select,
+  .datatable-filter-row input,
+  .datatable-filter-row select {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.4rem;
+  }
+}
+
+// Mobile (below md)
+@media (max-width: 767.98px) {
+  .datatable-toolbar-main {
+    gap: 0.5rem;
+
+    [id$="-filter-toggle"],
+    .datatable-filter-toggle {
+      display: inline-flex !important;
+      padding: 0.3rem 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-toolbar {
+      gap: 0.25rem;
+
+      .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.4rem;
+        margin: 0 0.25rem 0.25rem 0;
+      }
+    }
+
+    .ms-auto {
+      margin-left: auto;
+
+      label {
+        font-size: 0.7rem;
+      }
+
+      select {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.3rem;
+      }
+    }
+  }
+
+  .datatable-filter-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e9ecef;
+    display: none;
+
+    > div {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    input,
+    select {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.4rem;
+    }
+
+    .input-group-sm > .input-group-text {
+      padding: 0.3rem 0.4rem !important;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// Responsive table adjustments
+.table-responsive {
+  border: 1px solid #e9ecef;
+  border-top: none;
+  border-radius: 0 0 0.25rem 0.25rem;
+
+  .table {
+    margin-bottom: 0;
+
+    thead th {
+      font-weight: 700 !important;
+      background: #f8f9fa;
+      border-color: #e9ecef;
+      padding: 0.45rem 0.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody td {
+      padding: 0.45rem 0.5rem;
+      border-color: #e9ecef;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: rgba(102, 126, 234, 0.02);
+    }
+  }
+}
+
+// DataTable wrapper overrides
+.dataTables_wrapper {
+  .dataTables_length {
+    display: none;
+  }
+
+  .dataTables_filter {
+    display: none;
+  }
+
+  .dataTables_paginate {
+    padding: 0.75rem 0;
+
+    .paginate_button {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      margin: 0 0.1rem;
+
+      &.active a {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+      }
+
+      a:hover {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+      }
+    }
+  }
+}
+
+// Compact styling
+.btn-xs {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 0.15rem;
+}
+
+// Master listing consistency: action dropdown and status switch alignment
+.dataTables_wrapper table tbody td .btn-group .dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.dataTables_wrapper table tbody td .form-check.form-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding-left: 0;
+  min-height: 1.25rem;
+}
+
+.dataTables_wrapper table tbody td .form-check.form-switch .form-check-input {
+  float: none;
+  margin-left: 0;
+  margin-top: 0;
+}
+
+// DataTable scroll body border fix and min-height
+div.dataTables_scrollBody {
+  border-left: 0 !important;
+  border-left-width: 0 !important;
+  border-left-style: none !important;
+  border-left-color: transparent !important;
+  min-height: 180px;
+}
+
+.dataTables_wrapper div.dataTables_scrollBody {
+  border-left: 0 !important;
+  min-height: 180px;
+}
+
+div.table-responsive div.dataTables_scrollBody {
+  border-left: 0 !important;
+  min-height: 180px;
+}
+
+// Animations
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.datatable-toolbar {
+  animation: slideInUp 0.3s ease;
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .datatable-toolbar {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .datatable-filter-row {
+    input[type="text"],
+    input[type="search"],
+    select {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      &:focus {
+        background: rgba(102, 126, 234, 0.1);
+        border-color: #667eea;
+      }
+    }
+  }
+
+  .table-responsive {
+    border-color: rgba(255, 255, 255, 0.1);
+
+    .table {
+      thead th {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      tbody td {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      tbody tr:hover {
+        background: rgba(102, 126, 234, 0.05);
+      }
+    }
+  }
+}

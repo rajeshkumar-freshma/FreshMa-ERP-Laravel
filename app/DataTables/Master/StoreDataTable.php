@@ -23,25 +23,24 @@ class StoreDataTable extends DataTable
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
         return (new EloquentDataTable($query))
-            ->addColumn('action', 'status')
+            ->rawColumns(['status', 'action'])
             ->order(function ($model) {
                 $model->orderBy('id', 'DESC');
             })
             ->addColumn('status', function (Store $model) {
-                $status = $model->status;
-                return view('pages.partials.statuslabel', compact('status'));
+                return view('pages.partials.status_toggle_master', ['model' => $model, 'entity' => 'store']);
             })
             ->editColumn('created_at', function (Store $model) {
                 return CommonComponent::getCreatedAtFormat($model->created_at);
             })
             ->editColumn('city_id', function (Store $model) {
-                return $model->city->name;
+                return optional($model->city)->name ?? '-';
             })
             ->editColumn('state_id', function (Store $model) {
-                return $model->state->name;
+                return optional($model->state)->name ?? '-';
             })
             ->editColumn('country_id', function (Store $model) {
-                return $model->country->name;
+                return optional($model->country)->name ?? '-';
             })
             ->addColumn('action', function (Store $model) {
                 return view('pages.master.store._action-menu', compact('model'));
@@ -56,7 +55,20 @@ class StoreDataTable extends DataTable
      */
     public function query(Store $model): QueryBuilder
     {
-        $query = $model->newQuery();
+        $query = $model->newQuery()->with(['city', 'state', 'country']);
+
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -71,24 +83,27 @@ class StoreDataTable extends DataTable
 
         // Check if the user is authenticated and has permission to create
         if (Auth::check() && Auth::user()->can('Store Create')) {
-            $createButton[] = Button::make('create');
+            $createButton[] = Button::make('create')->className('btn btn-success btn-xs btn-sm');
 
         }
 
         return $this->builder()
             ->setTableId('store-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#store-table-date-from").val(); data.date_to = $("#store-table-date-to").val(); data.status = $("#store-table-status-filter").val();')
             ->stateSave(false)
-            ->responsive()
-            ->autoWidth(true)
+            ->responsive(false)
+            ->autoWidth(false)
             ->parameters([
+                'processing' => true,
+                'serverSide' => true,
                 'scrollX' => true,
+                'deferRender' => true,
+                'searchDelay' => 350,
                 'drawCallback' => 'function() { KTMenu.createInstances(); }',
             ])
-        // ->selectStyleSingle()
-            ->addTableClass('align-middle table-row-dashed fs-6 gy-5')
-            ->dom('Bfrtip')
+            ->addTableClass('align-middle table-row-dashed table-sm fs-7 gy-1 text-nowrap')
+            ->dom("<'d-flex justify-content-between mb-3'B>rtip")
             ->buttons($createButton);
         // ->buttons([
         //     Button::make('create'),
@@ -115,7 +130,7 @@ class StoreDataTable extends DataTable
             Column::make('city_id')->title(__('City')),
             Column::make('state_id')->title(__('State')),
             Column::make('country_id')->title(__('Country')),
-            Column::make('status'),
+            Column::make('status')->title(__('Active')),
             Column::make('created_at')->title(__('Created At')),
             Column::computed('action')
                 ->exportable(false)
@@ -135,3 +150,6 @@ class StoreDataTable extends DataTable
         return 'Store_' . date('YmdHis');
     }
 }
+
+
+

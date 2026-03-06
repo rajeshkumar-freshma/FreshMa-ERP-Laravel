@@ -27,37 +27,29 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        if (ENV('CRON_ENVIRONMENT') == 'production') {
-            $schedule->command('product:store')->daily();
-            $schedule->command('machine_details:store')->daily();
-            $schedule->command('productprice:update')->daily();
-            $schedule->command('machine_sale_bill:store')->everyFiveMinutes();
-            $schedule->command('sale_order:store')->everyFiveMinutes();
-            $schedule->command('store_stock:update')->daily();
-            // $schedule->command('import:excel')->daily();
-
-            // $schedule->command('push_notification:send')->daily();
-            // $schedule->command('purchase_invoice:send')->everyMinute();
-            // $schedule->command('download:s3files')->everyMinute();     // run every hour at 3 minute
-            // $schedule->command('salary:pay-silp-auto-generate-cron')->monthlyOn(1, '00:00');
-            // $schedule->command('activitylog:clean')->daily();
-        } else {
-            $schedule->command('product:store')->everyMinute();
-            $schedule->command('machine_details:store')->everyMinute();
-            $schedule->command('productprice:update')->everyMinute();
-            $schedule->command('machine_sale_bill:store')->everyMinute();
-            $schedule->command('sale_order:store')->everyMinute();
-            $schedule->command('store_stock:update')->everyMinute();
-            // $schedule->command('import:excel')->daily();
-
-            // $schedule->command('push_notification:send')->daily();
-            // $schedule->command('purchase_invoice:send')->everyMinute();
-            // $schedule->command('download:s3files')->everyMinute();     // run every hour at 3 minute
-            // $schedule->command('salary:pay-silp-auto-generate-cron')->everyMinute();
-            // $schedule->command('activitylog:clean')->daily();
+        // During unit tests we want schedules to be registered so tests can assert on them.
+        if (! $this->app->runningUnitTests() && ! filter_var(env('CRON_SYNC_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
+            return;
         }
 
-        \Artisan::call('queue:work --stop-when-empty');
+        if ($this->app->runningUnitTests() || filter_var(env('CRON_FULL_SYNC_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
+            $fullSyncCron = env('CRON_FULL_SYNC_CRON', '*/3 * * * *');
+            $schedule->command('product:store')->cron($fullSyncCron);
+            $schedule->command('machine_details:store')->cron($fullSyncCron);
+            $schedule->command('productprice:update')->cron($fullSyncCron);
+            $schedule->command('store_stock:update')->cron($fullSyncCron);
+        }
+
+        if ($this->app->runningUnitTests() || filter_var(env('CRON_SALES_SYNC_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
+            $salesSyncCron = env('CRON_SALES_SYNC_CRON', '*/3 * * * *');
+            $schedule->command('machine_sale_bill:store')->cron($salesSyncCron);
+            $schedule->command('sale_order:store')->cron($salesSyncCron);
+        }
+
+        if ($this->app->runningUnitTests() || filter_var(env('CRON_QUEUE_WORKER_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
+            $queueWorkerCron = env('CRON_QUEUE_WORKER_CRON', '* * * * *');
+            $schedule->command('queue:work --stop-when-empty')->cron($queueWorkerCron)->withoutOverlapping();
+        }
     }
 
     /**

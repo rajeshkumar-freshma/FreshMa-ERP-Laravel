@@ -7,7 +7,9 @@
         "watch-poll": "mix watch -- --watch-options-poll=1000",
         "hot": "mix watch --hot",
         "prod": "npm run production",
-        "production": "mix --production"
+        "production": "mix --production",
+        "test": "jest --verbose",
+        "test:frontend": "jest --verbose"
     },
     "dependencies": {
         "@ckeditor/ckeditor5-alignment": "^38.1.0",
@@ -100,6 +102,8 @@
         "autoprefixer": "^10.4.2",
         "axios": "^0.24.0",
         "del": "^6.0.0",
+        "jest": "^30.2.0",
+        "jest-environment-jsdom": "^30.2.0",
         "laravel-datatables-vite": "^0.5.2",
         "laravel-mix": "^6.0.39",
         "laravel-mix-purgecss": "^6.0.0",

@@ -16,11 +16,11 @@ class CurrencyTableSeeder extends Seeder
     public function run()
     {
 
-        DB::table('currencies')->delete();
+        DB::table('currencies')->truncate(); // better than delete()
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT currencies ON');
+        // DB::unprepared('SET IDENTITY_INSERT currencies ON');
 
         DB::table('currencies')->insert([
             [
@@ -2737,7 +2737,10 @@ class CurrencyTableSeeder extends Seeder
             ],
         ]);
 
-        DB::unprepared('SET IDENTITY_INSERT currencies OFF');
+        // DB::unprepared('SET IDENTITY_INSERT currencies OFF');
+
+        // Reset PostgreSQL sequence after manual ID inserts
+        
 
         DB::commit();
     }

@@ -29,7 +29,7 @@ class CategoryDataTable extends DataTable
             })
             ->addColumn('status', function (Category $model) {
                 $status = $model->status;
-                return view('pages.partials.statuslabel', compact('status'));
+                return view('pages.partials.status_toggle_master', ['model' => $model, 'entity' => 'category']);
             })
             ->addColumn('image', function (Category $model) {
                 if ($model->image != null) {
@@ -56,11 +56,24 @@ class CategoryDataTable extends DataTable
      */
     public function query(Category $model): QueryBuilder
     {
-        $query = $model->newQuery();
+        $query = $model->newQuery()->with(['getParent:id,name']);
 
         if ($this->request()->name != null) {
             $query = $query->where('name', 'LIKE', '%' . $this->request()->name . '%');
         }
+
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -74,19 +87,22 @@ class CategoryDataTable extends DataTable
         return $this->builder()
             ->setTableId('category-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#category-table-date-from").val(); data.date_to = $("#category-table-date-to").val(); data.status = $("#category-table-status-filter").val();')
             ->stateSave(false)
-            ->responsive()
-            ->autoWidth(true)
+            ->responsive(false)
+            ->autoWidth(false)
             ->parameters([
+                'processing' => true,
+                'serverSide' => true,
                 'scrollX' => true,
+                'deferRender' => true,
+                'searchDelay' => 350,
                 'drawCallback' => 'function() { KTMenu.createInstances(); }',
             ])
-        // ->selectStyleSingle()
-            ->addTableClass('align-middle table-striped table-row-dashed fs-6 gy-1')
-            ->dom('Bfrtip')
+            ->addTableClass('align-middle table-row-dashed table-sm fs-7 gy-1 text-nowrap')
+            ->dom("<'d-flex justify-content-between mb-3'B>rtip")
             ->buttons([
-                Button::make('create'),
+                Button::make('create')->className('btn btn-success btn-xs btn-sm'),
                 // Button::make('export'),
                 // Button::make('print'),
                 // Button::make('reset'),
@@ -126,3 +142,5 @@ class CategoryDataTable extends DataTable
         return 'Category_' . date('YmdHis');
     }
 }
+
+

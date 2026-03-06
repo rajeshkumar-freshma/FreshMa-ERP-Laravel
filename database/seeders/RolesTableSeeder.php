@@ -12,8 +12,8 @@ class RolesTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('roles')->delete();
-        DB::table('role_has_permissions')->delete();
+        DB::table('roles')->truncate();
+        DB::table('role_has_permissions')->truncate();
 
         // Populate roles
         $roles = [
@@ -36,21 +36,31 @@ class RolesTableSeeder extends Seeder
         ];
 
         foreach ($roles as $roleData) {
-            $role = new Role();
-            $role->name = $roleData['name'];
-            $role->guard_name = $roleData['guard_name'];
-            $role->save();
-        }
-        // Assign permissions to roles
-        $role = Role::where('name', 'Super Admin')->first();
-
-        $permissions = Permission::get();
-        foreach ($permissions as $permission) {
-            $role->givePermissionTo($permission->name);
+            Role::query()->updateOrCreate(
+                [
+                    'name' => $roleData['name'],
+                    'guard_name' => $roleData['guard_name'],
+                ]
+            );
         }
 
-        $superAdminRole = Role::where('name', 'Super Admin')->first();
-        $user = Admin::first();
-        $user->assignRole($superAdminRole);
+        // Assign all permissions in a single sync instead of one-by-one.
+        $superAdminRole = Role::query()
+            ->where('name', 'Super Admin')
+            ->where('guard_name', 'admin')
+            ->first();
+
+        if ($superAdminRole) {
+            $permissions = Permission::query()
+                ->where('guard_name', 'admin')
+                ->pluck('name')
+                ->all();
+            $superAdminRole->syncPermissions($permissions);
+        }
+
+        $user = Admin::query()->first();
+        if ($user && $superAdminRole) {
+            $user->syncRoles([$superAdminRole->name]);
+        }
     }
 }

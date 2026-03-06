@@ -4,6 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Partner;
 use App\Models\UserInfo;
+use App\Models\Country;
+use App\Models\State;
+use App\Models\City;
+use App\Models\Currency;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,9 +21,33 @@ class PartnerTableSeeder extends Seeder
      */
     public function run()
     {
-        // Clear existing data
+        $existingPartnerIds = DB::table('admins')
+            ->whereIn('user_type', [2, 3])
+            ->pluck('id')
+            ->all();
+
+        if (!empty($existingPartnerIds)) {
+            DB::table('user_infos')
+                ->where('admin_type', 1)
+                ->whereIn('admin_id', $existingPartnerIds)
+                ->delete();
+        }
+
         DB::table('admins')->whereIn('user_type', [2, 3])->delete();
-        DB::table('user_infos')->delete();
+
+        $managerRoleId = DB::table('roles')
+            ->where('name', 'Manager')
+            ->where('guard_name', 'admin')
+            ->value('id');
+        $partnerRoleId = DB::table('roles')
+            ->where('name', 'Store Manager')
+            ->where('guard_name', 'admin')
+            ->value('id');
+
+        $countryId = Country::query()->value('id');
+        $stateId = State::query()->where('country_id', $countryId)->value('id') ?? State::query()->value('id');
+        $cityId = City::query()->where('state_id', $stateId)->value('id') ?? City::query()->value('id');
+        $currencyId = Currency::query()->value('id');
 
         // Define partners to seed
         $partners = [
@@ -32,7 +60,7 @@ class PartnerTableSeeder extends Seeder
                 'user_type' => 2, // Manager
                 'user_code' => 'UC00001',
                 'status' => 1,
-                'role_id' => 1,
+                'role_id' => $managerRoleId,
                 'created_at' => now(),
                 'updated_at' => now(),
                 'api_token' => bin2hex(random_bytes(30)), // Generate unique API token
@@ -46,7 +74,7 @@ class PartnerTableSeeder extends Seeder
                 'user_type' => 3, // Partner
                 'user_code' => 'UC00002',
                 'status' => 1,
-                'role_id' => 2,
+                'role_id' => $partnerRoleId,
                 'created_at' => now(),
                 'updated_at' => now(),
                 'api_token' => bin2hex(random_bytes(30)), // Generate unique API token
@@ -65,10 +93,10 @@ class PartnerTableSeeder extends Seeder
                 'company' => 'Company',
                 'website' => 'https://example.com',
                 'address' => '1234 Example St',
-                'country_id' => 1, // Use valid country ID
-                'state_id' => 1, // Use valid state ID
-                'city_id' => 1, // Use valid city ID
-                'currency_id' => 1, // Use valid currency ID
+                'country_id' => $countryId,
+                'state_id' => $stateId,
+                'city_id' => $cityId,
+                'currency_id' => $currencyId,
                 'gst_number' => 'GST',
                 'joined_at' => now(),
                 'image' => null, // Assuming no image is provided

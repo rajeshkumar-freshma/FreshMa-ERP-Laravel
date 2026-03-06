@@ -30,7 +30,7 @@ class MachineDetailDataTable extends DataTable
             })
             ->addColumn('status', function (MachineData $model) {
                 $status = $model->status;
-                return view('pages.partials.statuslabel', compact('status'));
+                return view('pages.partials.status_toggle_master', ['model' => $model, 'entity' => 'machine_detail']);
             })
             ->editColumn('store_id', function (MachineData $model) {
                 return @$model->store_details->store_name;
@@ -54,7 +54,20 @@ class MachineDetailDataTable extends DataTable
      */
     public function query(MachineData $model): QueryBuilder
     {
-        $query = $model->newQuery();
+        $query = $model->newQuery()->with(['store_details:id,store_name']);
+
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -70,24 +83,27 @@ class MachineDetailDataTable extends DataTable
 
         // Check if the user is authenticated and has permission to create
         if (Auth::check() && Auth::user()->can('Machine Details Create')) {
-            $createButton[] = Button::make('create');
+            $createButton[] = Button::make('create')->className('btn btn-success btn-xs btn-sm');
 
         }
 
         return $this->builder()
             ->setTableId('machinedetail-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#machinedetail-table-date-from").val(); data.date_to = $("#machinedetail-table-date-to").val(); data.status = $("#machinedetail-table-status-filter").val();')
             ->stateSave(false)
-            ->responsive()
-            ->autoWidth(true)
-        // ->selectStyleSingle()
+            ->responsive(false)
+            ->autoWidth(false)
             ->parameters([
+                'processing' => true,
+                'serverSide' => true,
                 'scrollX' => true,
+                'deferRender' => true,
+                'searchDelay' => 350,
                 'drawCallback' => 'function() { KTMenu.createInstances(); }',
             ])
-            ->addTableClass('align-middle table-row-dashed fs-6 gy-5')
-            ->dom('Bfrtip')
+            ->addTableClass('align-middle table-row-dashed table-sm fs-7 gy-1 text-nowrap')
+            ->dom("<'d-flex justify-content-between mb-3'B>rtip")
             ->buttons($createButton);
         // ->buttons([
         //     Button::make('create'),
@@ -133,3 +149,6 @@ class MachineDetailDataTable extends DataTable
         return 'MachineDetail_' . date('YmdHis');
     }
 }
+
+
+

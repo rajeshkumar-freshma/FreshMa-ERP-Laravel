@@ -86,6 +86,21 @@ class DailyFishProductPriceUpdateDataTable extends DataTable
                 });
         }
 
+        // Status filter
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        // Date from filter
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        // Date to filter
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         // Apply any additional scopes or modifications
         return $this->applyScopes($query);
     }
@@ -105,9 +120,9 @@ class DailyFishProductPriceUpdateDataTable extends DataTable
         }
 
         return $this->builder()
-            ->setTableId('daily_price_updates-table')
+            ->setTableId('dailyfishpriceupdate-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#dailyfishpriceupdate-table-date-from").val(); data.date_to = $("#dailyfishpriceupdate-table-date-to").val(); data.status = $("#dailyfishpriceupdate-table-status-filter").val(); data.product_id = $("#product_id").val(); data.store_id = $("#store_id").val(); data.date = $("#date").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

@@ -1,8 +1,8 @@
 <!--begin::Action--->
-<td class="no-wrap d-flex">
+
     <div class="btn-group">
         @if (auth()->user()->can('Leave Type Edit') || auth()->user()->can('Leave Type View'))
-            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+            <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Action
             </button>
@@ -19,5 +19,5 @@
         @endif
 
     </div>
-</td>
+
 <!--end::Action--->

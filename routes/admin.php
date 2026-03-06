@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\Master\PartnerController;
 use App\Http\Controllers\Admin\Master\SupplierController;
 use App\Http\Controllers\Admin\Master\TransportTypeController;
 use App\Http\Controllers\Admin\Master\MachineDetailController;
+use App\Http\Controllers\Admin\Master\MasterStatusController;
 use App\Http\Controllers\Admin\Master\PaymentTypeController;
 use App\Http\Controllers\Admin\Master\DenominationTypeController;
 use App\Http\Controllers\Admin\Product\ProductController;
@@ -102,13 +103,13 @@ use App\Models\PaymentTransaction;
 use App\Models\SalesOrder;
 use App\Models\Transaction;
 
-Route::prefix(env('ADMIN_PREFIX'))
+Route::prefix(config('app.admin_prefix'))
     ->name('admin.')
     ->group(function () {
         //Login Routes
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 
-        Route::post('/login', [LoginController::class, 'login']);
+        Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:admin-login');
 
         // country state city
         Route::get('/getstatebycountry', [HomeController::class, 'getstate'])->name('getStatesByCountry');
@@ -128,7 +129,7 @@ Route::prefix(env('ADMIN_PREFIX'))
 
 Route::get('purchase-order/invoice/{id}/view', [PaymentTransactionController::class, 'invoice'])->name('purchase-invoice');
 Route::get('sales-order/invoice/{id}/view', [PaymentTransactionController::class, 'invoice'])->name('sales-invoice');
-Route::prefix(env('ADMIN_PREFIX'))
+Route::prefix(config('app.admin_prefix'))
     ->name('admin.')
     ->middleware(['auth:admin'])
     ->group(function () {
@@ -217,6 +218,9 @@ Route::prefix(env('ADMIN_PREFIX'))
 
         /* machine-details */
         Route::resource('master/machine-details', MachineDetailController::class);
+
+        /* master status toggle (shared) */
+        Route::post('master/status-change', [MasterStatusController::class, 'update'])->name('master.statuschange');
 
         /* payment-type */
         Route::resource('master/payment-type', PaymentTypeController::class);

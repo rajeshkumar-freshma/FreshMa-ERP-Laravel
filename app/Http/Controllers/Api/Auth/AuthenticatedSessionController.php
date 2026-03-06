@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ApiLoginStoreRequest;
+use App\Http\Requests\Auth\ApiSaveTokenRequest;
+use App\Http\Requests\Auth\ApiVerifyOtpRequest;
+use App\Http\Requests\Auth\ApiVerifyTokenRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Admin;
 use App\Models\User;
@@ -11,8 +15,7 @@ use App\Traits\SMSTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
@@ -58,21 +61,9 @@ class AuthenticatedSessionController extends Controller
         return ['email' => $request->get('email'), 'password' => $request->get('password')];
     }
 
-    public function loginStore(Request $request)
+    public function loginStore(ApiLoginStoreRequest $request)
     {
         if ($request->email != null && $request->password != null) {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required',
-                'password' => 'required|min:4|max:255',
-            ], [
-                'email.required' => 'Please Enter Your Mail Address',
-                'email.unique' => 'Email Already Exists',
-                'email.email' => 'Email Must be an valid address',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()->all()]);
-            }
             if (is_numeric($request->get('email'))) {
                 $credentials = ['phone_number' => $request->get('email'), 'password' => $request->get('password')];
             } elseif (filter_var($request->get('email'), FILTER_VALIDATE_EMAIL)) {
@@ -83,31 +74,20 @@ class AuthenticatedSessionController extends Controller
 
             if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) { // this is is admin check
                 //Authentication Success...
-                Log::info("guard admin entered with credentials");
-                $admin = Admin::where('email', $request->email)->OrWhere('phone_number', $request->email)->first();
+                /** @var \App\Models\Admin $admin */
+                $admin = Auth::guard('admin')->user();
                 $access_token = $admin->createToken('token')->accessToken;
 
-                $bottom_menu = UserAppMenuMapping::where('admin_id', $admin->id)->where('menu_type', 1)->where('admin_type', 1)->get();
-                $sidebar_menu = UserAppMenuMapping::where('admin_id', $admin->id)->where('menu_type', 2)->where('admin_type', 1)->get();
-                Log::info($bottom_menu);
-                Log::info($sidebar_menu);
-                if (count($bottom_menu) == 0 && count($sidebar_menu) == 0) {
+                $hasBottomMenu = UserAppMenuMapping::where('admin_id', $admin->id)->where('menu_type', 1)->where('admin_type', 1)->exists();
+                $hasSidebarMenu = UserAppMenuMapping::where('admin_id', $admin->id)->where('menu_type', 2)->where('admin_type', 1)->exists();
+                if (!$hasBottomMenu && !$hasSidebarMenu) {
                     return response()->json([
                         'status' => 400,
                         'message' => 'This Supplier Does Not having an Menu mapping Pls contact the admin After try!',
                 ]);
                 }
 
-                if (count($admin->user_warehouse_data($admin)) > 0 && $admin->user_type == 1) {
-                    $admin_access_level = 'super_admin';
-                } else if (count($admin->user_warehouse_data($admin)) > 0) {
-                    $admin_access_level = 'warehouse';
-                } else if (count($admin->user_store_data($admin)) > 0) {
-                    $admin_access_level = 'store';
-                } else {
-                    $admin_access_level = 'super_admin';
-                }
-                $admin->access_level = $admin_access_level;
+                $admin->access_level = $this->resolveAdminAccessLevel($admin);
 
                 return response()->json([
                     'status' => 200,
@@ -118,16 +98,9 @@ class AuthenticatedSessionController extends Controller
                 ]);
             } elseif (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
                 //Authentication Success...
-                Log::info("guard supplier");
                 $supplier = User::where('user_type', 2)->where('email', $request->email)->first();
-
-                Log::info($supplier);
                 $bottom_menu = UserAppMenuMapping::where('admin_id', $supplier->id)->where('menu_type', 1)->where('admin_type', 2)->get();
                 $sidebar_menu = UserAppMenuMapping::where('admin_id', $supplier->id)->where('menu_type', 2)->where('admin_type', 2)->get();
-
-                Log::info("App Menu");
-                Log::info($bottom_menu);
-                Log::info($sidebar_menu);
 
                 if (count($bottom_menu) == 0 && count($sidebar_menu) == 0) {
                     return response()->json([
@@ -135,9 +108,6 @@ class AuthenticatedSessionController extends Controller
                         'message' => 'This Supplier Does Not having an Menu mapping Pls contact the admin After try!',
                     ]);
                 }
-
-                Log::info($supplier->createToken('token')->accessToken);
-                Log::info("guard supplier login completed");
 
                 return response()->json([
                     'status' => 200,
@@ -148,16 +118,6 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
         } elseif ($request->filled('phone_number')) {
-            Log::info('Phone number');
-            Log::info($request->phone_number);
-
-            $validator = Validator::make($request->all(), [
-                'phone_number' => 'required|min:10|max:12',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()->all()]);
-            }
             $admin = Admin::where('phone_number', $request->phone_number)->orderBy('id', 'DESC')->first();
 
             if ($admin && $admin->status == 0) {
@@ -195,23 +155,14 @@ class AuthenticatedSessionController extends Controller
         return $this->loginFailed();
     }
 
-    public function verifyOtp(Request $request)
+    public function verifyOtp(ApiVerifyOtpRequest $request)
     {
         try {
-            $request->validate([
-                'phone_number' => 'required',
-                'otp' => 'required|numeric',
-            ], [
-                'otp.required' => 'OTP is required',
-                'otp.numeric' => 'OTP must be a number',
-            ]);
-
             $admin = Admin::where('phone_number', $request->phone_number)->first();
 
             if ($admin && $admin->status == 0) {
                 return response()->json(['status' => 400, 'message' => 'Account is Inactive']);
             }
-            Log::info($admin->createToken('token')->accessToken);
             if ($admin && $admin->otp == $request->otp) {
                 return response()->json([
                     'status' => 200,
@@ -222,7 +173,8 @@ class AuthenticatedSessionController extends Controller
                 return response()->json(['status' => 403, 'message' => 'OTP Invalid']);
             }
         } catch (\Throwable $e) {
-            return response()->json(['status' => 400, 'message' => $e->getMessage()]);
+            Log::error('OTP verification failed', ['message' => $e->getMessage()]);
+            return response()->json(['status' => 400, 'message' => 'OTP verification failed']);
         }
     }
 
@@ -241,12 +193,8 @@ class AuthenticatedSessionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function apiVerifyToken(Request $request)
+    public function apiVerifyToken(ApiVerifyTokenRequest $request)
     {
-        $request->validate([
-            'api_token' => 'required',
-        ]);
-
         $api_token = Admin::where('api_token', $request->api_token)->exists();
         if ($api_token) {
             $user = Admin::where('api_token', $request->api_token)->exists();
@@ -269,69 +217,52 @@ class AuthenticatedSessionController extends Controller
      *
      * @return \Illuminate\Http\Response
      *  */
-    public function saveToken(Request $request)
+    public function saveToken(ApiSaveTokenRequest $request)
     {
         try {
-            $userId = Auth::guard('api')->user()->id; // Assuming 'api' guard is used for Admin model
-            Log::info("userIduserId");
-            Log::info($userId);
-            Log::info("supplierUserId");
-            $supplierUserId = Auth::guard('supplier')->user()->id;
-            Log::info($supplierUserId);
-            $datas = [
+            $payload = [
                 'os' => $request->os,
                 'fcm_token' => $request->fcmToken,
                 'voipToken' => $request->voipToken,
             ];
 
-            // Validate $datas here if needed
+            $adminUser = Auth::guard('api')->user();
+            $supplierUser = Auth::guard('supplier')->user();
+            $updated = false;
 
-            if ($userId) {
-                Log::info("auth user id comes");
-                Admin::where('id', $userId)->update($datas);
+            DB::transaction(function () use ($adminUser, $supplierUser, $payload, &$updated): void {
+                if ($adminUser) {
+                    Admin::where('id', $adminUser->id)->update($payload);
+                    $updated = true;
+                }
+
+                if ($supplierUser) {
+                    User::where('id', $supplierUser->id)->update($payload);
+                    $updated = true;
+                }
+            });
+
+            if (!$updated) {
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Unauthenticated',
+                ], 401);
             }
 
-            if ($supplierUserId) {
-                Log::info("auth supplier id comes");
-                User::where('id', $supplierUserId)->update($datas);
-            }
-
-            Log::info("Tokens updated successfully for Admin ID: $userId and Supplier ID: $supplierUserId");
-
-            // Prepare response
-            $data['message'] = 'Token Updated Successfully';
-            return response()->json(['is_success' => true, 'data' => $data]);
+            return response()->json([
+                'is_success' => true,
+                'data' => [
+                    'message' => 'Token Updated Successfully',
+                ],
+            ]);
 
         } catch (\Throwable $e) {
-            // Log error
-            Log::error("Error updating tokens: " . $e->getMessage());
-
-            // Return error response
+            Log::error('Error updating push token', ['message' => $e->getMessage()]);
             return response()->json([
                 'status' => 400,
                 'details' => 'Failed to update tokens. Please try again later.',
             ]);
         }
-
-        // try {
-        //     $datas = [
-        //         'os' => $request->os,
-        //         'fcm_token' => $request->fcmToken,
-        //         'voipToken' => $request->voipToken,
-        //     ];
-        //     Log::info("supplier log in save token");
-        //     Admin::where('id', Auth::guard('api')->user()->id)->update($datas);
-        //     User::where('id', Auth::guard('supplier')->supplier()->id)->update($datas);
-        //     $data['message'] = 'Token Updated Successfully';
-        //     return response()->json(['is_success' => true, 'data' => $data]);
-        // } catch (\Throwable $e) {
-        //     Log::info("Authcontroller Token Check");
-        //     Log::info($e);
-        //     return response()->json([
-        //         'status' => 400,
-        //         'details' => $e->getMessage(),
-        //     ]);
-        // }
     }
 
     /**
@@ -350,5 +281,24 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function resolveAdminAccessLevel(Admin $admin): string
+    {
+        $warehouseIds = $admin->user_warehouse_data($admin);
+        if (!empty($warehouseIds) && (int) $admin->user_type === 1) {
+            return 'super_admin';
+        }
+
+        if (!empty($warehouseIds)) {
+            return 'warehouse';
+        }
+
+        $storeIds = $admin->user_store_data($admin);
+        if (!empty($storeIds)) {
+            return 'store';
+        }
+
+        return 'super_admin';
     }
 }

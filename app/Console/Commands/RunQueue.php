@@ -37,6 +37,7 @@ class RunQueue extends Command
      */
     public function handle()
     {
-        \Artisan::call('queue:listen');
+        // Process current queue and exit instead of starting a long-running listener.
+        \Artisan::call('queue:work --stop-when-empty');
     }
 }

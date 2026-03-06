@@ -1,5 +1,8 @@
 <!--begin::Table-->
-{{ $dataTable->table() }}
+@include('pages.partials._datatable-toolbar-template', [
+    'tableId' => 'vendorsale-table',
+    'dataTable' => $dataTable
+])
 <!--end::Table-->
 
 {{-- Inject Scripts --}}

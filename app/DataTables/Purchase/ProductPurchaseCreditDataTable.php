@@ -59,11 +59,26 @@ class ProductPurchaseCreditDataTable extends DataTable
     {
         if (Auth::guard('admin')->check()) {
             $query = $model->query()->whereIn('payment_status', [2, 3]);
-            return $this->applyScopes($query);
         } else {
             $query = $model->query()->where([['supplier_id', Auth::user()->id]])->whereIn('payment_status', [2, 3]);
-            return $this->applyScopes($query);
         }
+
+        // Status filter
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        // Date from filter
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        // Date to filter
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
+        return $this->applyScopes($query);
     }
 
     /**
@@ -74,9 +89,9 @@ class ProductPurchaseCreditDataTable extends DataTable
     public function html(): HtmlBuilder
     {
         return $this->builder()
-            ->setTableId('productpurchase-table')
+            ->setTableId('productpurchasecredit-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#productpurchasecredit-table-date-from").val(); data.date_to = $("#productpurchasecredit-table-date-to").val(); data.status = $("#productpurchasecredit-table-status-filter").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

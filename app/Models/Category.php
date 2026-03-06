@@ -19,19 +19,25 @@ class Category extends Model
     protected static function booted()
     {
         static::creating(function ($data) {
-            $data->created_by = Auth::user()->id;
-            $data->updated_by = Auth::user()->id;
+            $actorId = static::resolveActorId();
+            $data->created_by = $actorId;
+            $data->updated_by = $actorId;
         });
 
         static::updating(function ($data) {
-            $data->updated_by = Auth::user()->id;
+            $data->updated_by = static::resolveActorId();
         });
+    }
+
+    private static function resolveActorId(): int
+    {
+        return Auth::guard('admin')->id() ?? Auth::guard('api')->id() ?? Auth::id() ?? 1;
     }
 
     /* Relationship Container */
     public function getCategory()
     {
-        return $this->hasMany($this, 'parent_id')->select(['id', 'name', 'status', 'parent_id']);
+        return $this->hasMany(Category::class, 'parent_id')->select(['id', 'name', 'status', 'parent_id']);
     }
 
     public function getChildrenCategory()
@@ -46,7 +52,7 @@ class Category extends Model
 
     public function getParent()
     {
-        return $this->hasOne($this, 'id', 'parent_id');
+        return $this->hasOne(Category::class, 'id', 'parent_id');
     }
 
     public function getParentNameAttribute()

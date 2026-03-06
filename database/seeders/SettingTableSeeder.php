@@ -10,7 +10,7 @@ class SettingTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('system_settings')->delete();
+        DB::table('system_settings')->truncate();;
         $user = Admin::first(); // You might want to adjust how you fetch the user
 
         $invoiceFors = [

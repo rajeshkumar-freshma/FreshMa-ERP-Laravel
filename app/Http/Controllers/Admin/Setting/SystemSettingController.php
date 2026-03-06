@@ -8,7 +8,6 @@ use App\Http\Requests\Setting\SystemSiteSettingFormRequest;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\MailCredential;
-use App\Models\MailSetting;
 use App\Models\PartnershipType;
 use App\Models\Store;
 use App\Models\SystemSetting;
@@ -182,24 +181,13 @@ class SystemSettingController extends Controller
     public function autoCronRun()
     {
         try {
-            //     // Run scheduled tasks
             Log::info("Run Started");
-            $scheduleOutput = Artisan::call('queue:listen');
+            Artisan::call('queue:work --once');
             Log::info("Run Ended");
-            //     // Process queued jobs
-            //     $queueOutput = Artisan::call('queue:work', ['--once' => true]);
-
-            //     // Check if there are any errors in the output
-            //     if ($scheduleOutput !== 0 || $queueOutput !== 0) {
-            //         // If there are errors, handle them appropriately
-            //         return redirect()->back()->with('error', 'An error occurred while executing cron jobs.');
-            //     }
-
-            // If everything executed successfully
             return redirect()->back()->with('success', 'All cron jobs executed successfully.');
         } catch (\Exception $e) {
-            // Handle exception
-            echo 'Error executing Artisan command: ' . $e->getMessage();
+            Log::error('Error executing auto cron run: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error executing cron jobs.');
         }
     }
 }

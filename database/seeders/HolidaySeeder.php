@@ -16,7 +16,7 @@ class HolidaySeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('holidays')->delete();
+        DB::table('holidays')->truncate();
 
         DB::beginTransaction();
 

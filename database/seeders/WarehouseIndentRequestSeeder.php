@@ -16,12 +16,20 @@ class WarehouseIndentRequestSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('warehouse_indent_requests')->delete();
+        DB::table('warehouse_indent_requests')->truncate();
 
-        // Create a dummy WarehouseIndentRequest
+        $warehouseId = DB::table('warehouses')->value('id');
+        if (!$warehouseId) {
+            $this->call(WarehousesTableSeeder::class);
+            $warehouseId = DB::table('warehouses')->value('id');
+        }
+
+        if (!$warehouseId) {
+            $this->command->warn('No warehouse found. Please seed warehouses first.');
+            return;
+        }
         $indentRequestData = [
-            'warehouse_id' => 1, // Replace with a valid warehouse ID
-           
+            'warehouse_id' => $warehouseId,
             'request_code' => 'WIR0001',
             'request_date' => Carbon::now()->format('Y-m-d'),
             'expected_date' => Carbon::now()->addDays(7)->format('Y-m-d'),
@@ -33,7 +41,7 @@ class WarehouseIndentRequestSeeder extends Seeder
             'file_path' => 'path/to/file.jpg', // Example file path
         ];
 
-        $indentRequest = WarehouseIndentRequest::create($indentRequestData);
+        WarehouseIndentRequest::create($indentRequestData);
 
     }
 }

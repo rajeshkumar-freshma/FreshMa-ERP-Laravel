@@ -15,8 +15,8 @@ class VendorTableSeeder extends Seeder
      */
     public function run()
     {
-
-        DB::table('users')->where('user_type', 1)->delete(); //1=> Vendor in admins table
+        // Remove only vendor users instead of truncating the full users table.
+        DB::table('users')->where('user_type', 1)->delete(); // 1 => Vendor
 
         // DB::unprepared('SET IDENTITY_INSERT users ON');
 

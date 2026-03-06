@@ -38,7 +38,7 @@ class UnitsTableSeeder extends Seeder
         }
         // \DB::table('units')->delete();
 
-        \DB::unprepared('SET IDENTITY_INSERT units ON');
+        // \DB::unprepared('SET IDENTITY_INSERT units ON');
 
         // \DB::table('units')->insert(array (
         //     0 =>
@@ -91,7 +91,7 @@ class UnitsTableSeeder extends Seeder
         //     ),
         // ));
 
-        \DB::unprepared('SET IDENTITY_INSERT units OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT units OFF');
 
 
     }

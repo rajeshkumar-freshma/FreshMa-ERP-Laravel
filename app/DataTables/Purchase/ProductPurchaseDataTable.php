@@ -75,6 +75,22 @@ class ProductPurchaseDataTable extends DataTable
             Log::info("supplier wise purchse orders report supplier_id");
             $query = $query->where('supplier_id', $this->request()->supplier_id);
         }
+
+        // Status filter
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        // Date from filter
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        // Date to filter
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -96,7 +112,7 @@ class ProductPurchaseDataTable extends DataTable
         return $this->builder()
             ->setTableId('productpurchase-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#productpurchase-table-date-from").val(); data.date_to = $("#productpurchase-table-date-to").val(); data.status = $("#productpurchase-table-status-filter").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

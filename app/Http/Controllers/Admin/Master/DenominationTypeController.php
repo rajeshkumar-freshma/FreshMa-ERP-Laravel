@@ -36,9 +36,9 @@ class DenominationTypeController extends Controller
     public function store(Request $request)
     {
         $denominationCode = 'DN' . str_pad(DenominationType::count() + 1, 5, '0', STR_PAD_LEFT);
-        Log::info('Generated denomination code:', ['denomination_code' => $denominationCode]);
 
         DenominationType::create([
+            'type' => $request->input('type', 1),
             'value' => $request->denomination_value,
             'denomination_code' => $denominationCode,
             'description' => $request->description,
@@ -80,21 +80,14 @@ class DenominationTypeController extends Controller
      */
     public function update(Request $request, $id)
     {
-        Log::info('Update request data:', $request->all());
-
-        Log::info('Updating');
-
         $denominationType = DenominationType::findOrFail($id);
         $denominationCode = $denominationType->denomination_code;
-
-        Log::info('Updating denomination code:', ['denomination_code' => $denominationCode]);
 
         // Update the record
         $denominationType->update([
             'value' => $request->denomination_value,
             'denomination_code' => $denominationCode,
             'description' => $request->description,
-            'status' => $request->status,
         ]);
 
         return redirect()->route('admin.denomination-type.index')->with('success', 'Denomination Type Updated Successfully');

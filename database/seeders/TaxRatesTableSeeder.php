@@ -16,9 +16,9 @@ class TaxRatesTableSeeder extends Seeder
     {
 
 
-        \DB::table('tax_rates')->delete();
+        \DB::table('tax_rates')->truncate();
 
-        \DB::unprepared('SET IDENTITY_INSERT tax_rates ON');
+        // \DB::unprepared('SET IDENTITY_INSERT tax_rates ON');
 
         \DB::table('tax_rates')->insert(array (
             0 =>
@@ -71,7 +71,8 @@ class TaxRatesTableSeeder extends Seeder
             ),
         ));
 
-        \DB::unprepared('SET IDENTITY_INSERT tax_rates OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT tax_rates OFF');
+        
 
 
     }

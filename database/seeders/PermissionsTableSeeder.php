@@ -17,7 +17,6 @@ class PermissionsTableSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('permissions')->delete();
 
         $permissions = [
             [
@@ -1201,11 +1200,20 @@ class PermissionsTableSeeder extends Seeder
 
 
         foreach ($permissions as $value) {
-            $permission = new Permission();
-            $permission->name = $value['name'];
-            $permission->guard_name = $value['guard_name'];
-            $permission->permission_group_id = $value['permission_group_id']->id;
-            $permission->save();
+
+            if (!$value['permission_group_id']) {
+                continue;
+            }
+
+            Permission::updateOrCreate(
+                [
+                    'name' => $value['name'],
+                    'guard_name' => $value['guard_name'],
+                ],
+                [
+                    'permission_group_id' => $value['permission_group_id']->id,
+                ]
+            );
         }
     }
 }

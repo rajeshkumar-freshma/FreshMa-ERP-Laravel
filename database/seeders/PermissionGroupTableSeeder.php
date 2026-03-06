@@ -17,7 +17,6 @@ class PermissionGroupTableSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        DB::table('permission_groups')->delete();
 
         $permissionGroups = [
             [

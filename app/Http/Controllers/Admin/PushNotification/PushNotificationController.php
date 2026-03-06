@@ -25,10 +25,21 @@ class PushNotificationController extends Controller
     {
         return view('pages.push_notifications.index');
     }
-    // public function test_notification()
-    // {
-    //     dd(Helper::sendPushToNotification('testing notifications'));
-    // }
+
+    public function test_notification()
+    {
+        if (!app()->environment(['local', 'testing'])) {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Notification test endpoint is reachable.',
+        ]);
+    }
 
     // public function storeToken(Request $request)
     // {

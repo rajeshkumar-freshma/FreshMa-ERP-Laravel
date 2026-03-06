@@ -15,11 +15,11 @@ class DesignationSeeder extends Seeder
     public function run()
     {
 
-        DB::table('designations')->delete();
+         DB::table('designations')->truncate();
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT currencies ON');
+        // DB::unprepared('SET IDENTITY_INSERT currencies ON');
 
         $data = $this->data();
 
@@ -29,7 +29,7 @@ class DesignationSeeder extends Seeder
             ]);
         }
 
-        DB::unprepared('SET IDENTITY_INSERT designations OFF');
+        // DB::unprepared('SET IDENTITY_INSERT designations OFF');
 
         DB::commit();
     }

@@ -1,12 +1,10 @@
 <!--begin::Table-->
-{{ $dataTable->table() }}
+@include('pages.partials._datatable-toolbar-template', [
+    'tableId' => 'loan-category-table',
+    'dataTable' => $dataTable
+])
 <!--end::Table-->
 
-{{-- Inject Scripts --}}
-@section('scripts')
-    {{ $dataTable->scripts() }}
-    <script src="{{ asset('vendor/datatables/buttons.server-side.js') }}"></script>
-@endsection
 {{-- @section('scripts')
     {{ $dataTable->scripts() }}
     <script src="{{ asset('vendor/datatables/buttons.server-side.js') }}"></script>

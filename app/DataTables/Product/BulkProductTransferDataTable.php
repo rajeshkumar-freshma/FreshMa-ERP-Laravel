@@ -71,6 +71,22 @@ class BulkProductTransferDataTable extends DataTable
     public function query(ProductBulkTransfer $model): QueryBuilder
     {
         $query = $model->newQuery();
+
+        // Status filter
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        // Date from filter
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        // Date to filter
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -88,9 +104,9 @@ class BulkProductTransferDataTable extends DataTable
         }
 
         return $this->builder()
-            ->setTableId('producttransfer-table')
+            ->setTableId('bulkproducttransfer-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#bulkproducttransfer-table-date-from").val(); data.date_to = $("#bulkproducttransfer-table-date-to").val(); data.status = $("#bulkproducttransfer-table-status-filter").val();')
             ->dom('Bfrtip')
         // ->orderBy(1)
         // ->buttons(

@@ -146,6 +146,13 @@ class FishCuttingController extends Controller
 
     public function fishcuttingstore(Request $request)
     {
+        $request->validate([
+            'weight' => ['required', 'numeric', 'gt:0'],
+            'product_id' => ['required', 'integer'],
+            'store_id' => ['required', 'integer'],
+            'cutting_date' => ['required', 'date'],
+        ]);
+
         DB::beginTransaction();
         try {
             $fishcutting = new FishCutting();

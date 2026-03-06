@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Storage;
 class Helper extends Model
 {
     use HasFactory;
-    use HasFactory;
 
     public static function downloadInvoice($pdf, $fileName)
     {
@@ -110,17 +109,24 @@ class Helper extends Model
         curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/v1/projects/freshma-erp/messages:send');
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
         $response = curl_exec($ch);
 
         if ($response === false) {
-            die('Curl failed: ' . curl_error($ch));
+            Log::error('sendNotification curl failed: ' . curl_error($ch));
+            curl_close($ch);
+            return false;
         }
+        curl_close($ch);
         Log::info("user data in send notification function");
         Log::info($user);
         Log::info($response);
+        return true;
         // }
     }
     // public static function createOrderId()
@@ -164,22 +170,29 @@ class Helper extends Model
             curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/v1/projects/rrk-erp/messages:send');
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
 
             $response = curl_exec($ch);
 
             if ($response === false) {
-                die('Curl failed: ' . curl_error($ch));
+                Log::error('sendPushNotification curl failed: ' . curl_error($ch));
+                curl_close($ch);
+                return false;
             }
+            curl_close($ch);
             Log::info("sendPushNotification response");
             Log::info($response);
             Log::info('end sendPushNotification');
             Log::info('end sendPushNotification');
+            return true;
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $exception) {
-            // Handle the case where the record is not found
-            return response()->view('errors.404', [], 404);
+            Log::error('sendPushNotification failed: ' . $exception->getMessage());
+            return false;
         }
     }
 
@@ -416,18 +429,19 @@ class Helper extends Model
             Log::info($key);
             Log::info("path");
             Log::info($path);
-            $value = '"' . trim($value) . '"';
-            Log::info("value ");
-            Log::info($value);
-            if (is_numeric(strpos(file_get_contents($path), $key)) && strpos(file_get_contents($path), $key) >= 0) {
-                Log::info("enetere overwite data");
-                file_put_contents($path, str_replace(
-                    $key . '="' . env($key) . '"',
-                    $key . '=' . $value,
-                    file_get_contents($path)
-                ));
-            } else {
-                file_put_contents($path, file_get_contents($path) . "\r\n" . $key . '=' . $value);
+            $valueQuoted = '"' . trim($value) . '"';
+            try {
+                $content = file_get_contents($path);
+                $existing = strpos($content, $key);
+                if ($existing !== false) {
+                    Log::info("enter overwrite data");
+                    $new = str_replace($key . '="' . env($key, '') . '"', $key . '=' . $valueQuoted, $content);
+                } else {
+                    $new = $content . PHP_EOL . $key . '=' . $valueQuoted;
+                }
+                file_put_contents($path, $new);
+            } catch (\Exception $ex) {
+                Log::error('overWriteEnvFile failed: ' . $ex->getMessage());
             }
         }
     }

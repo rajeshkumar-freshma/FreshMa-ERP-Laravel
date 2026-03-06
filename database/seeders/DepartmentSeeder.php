@@ -14,11 +14,12 @@ class DepartmentSeeder extends Seeder
     public function run()
     {
 
-        DB::table('departments')->delete();
+        
+        DB::table('departments')->truncate();
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT currencies ON');
+        // DB::unprepared('SET IDENTITY_INSERT currencies ON');
         
         $data = $this->data();
 
@@ -28,7 +29,8 @@ class DepartmentSeeder extends Seeder
             ]);
         }
 
-        DB::unprepared('SET IDENTITY_INSERT departments OFF');
+        // DB::unprepared('SET IDENTITY_INSERT departments OFF');
+        
 
         DB::commit();
     }

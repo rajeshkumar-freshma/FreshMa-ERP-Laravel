@@ -2,11 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Staff;
 use App\Models\UserInfo;
+use App\Models\Country;
+use App\Models\State;
+use App\Models\City;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -19,9 +21,8 @@ class EmployeeSeeder extends Seeder
      */
     public function run(): void
     {
-
-       
-        DB::table('admins')->where('user_type',4)->delete();
+        // Do not use truncate() with where() - it truncates the whole table.
+        DB::table('admins')->where('user_type', 4)->delete();
 
         DB::beginTransaction();
 
@@ -44,9 +45,12 @@ class EmployeeSeeder extends Seeder
         $userInfo->admin_type = 1; // 1 => Admin
         $userInfo->admin_id = $staff->id;
         $userInfo->address = '123 Main St, Springfield';
-        $userInfo->country_id = 1; // Replace with actual country ID
-        $userInfo->state_id = 1; // Replace with actual state ID
-        $userInfo->city_id = 1; // Replace with actual city ID
+        $countryId = Country::query()->value('id');
+        $stateId = State::query()->where('country_id', $countryId)->value('id') ?? State::query()->value('id');
+        $cityId = City::query()->where('state_id', $stateId)->value('id') ?? City::query()->value('id');
+        $userInfo->country_id = $countryId;
+        $userInfo->state_id = $stateId;
+        $userInfo->city_id = $cityId;
         $userInfo->joined_at = Carbon::now()->format('Y-m-d');
         // Dummy financial and identification data
         $userInfo->pan_number = 'ABCDE1234F';

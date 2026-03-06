@@ -47,7 +47,7 @@ class ProductPriceUpdateJob implements ShouldQueue
                         $product_price_checks = ProductPrice::where([['store_id', $machine_data->Slno], ['product_id', $product->id]])->orderByDesc('id')->first();
                         // $product_price_checks = ProductPrice::where([['store_id', $machine_data->Slno],['product_id', $product->id], ['price_update_date', date('Y-m-d')]])->first();
 
-                        $live_product_data = DB::connection('sqlsrv_ease')->table('PLU_MC')->where('pluno', $product->id)->first();
+                        $live_product_data = $this->fetchEaseRow('PLU_MC', $product->id);
                         if ($product_price_checks == null) {
                             // ProductPrice::where([['store_id', $machine_data->Slno],['product_id', $product->id]])->delete();
                             $produxt_branch_prices = new ProductPrice();
@@ -84,5 +84,14 @@ class ProductPriceUpdateJob implements ShouldQueue
             Log::error($e);
             DB::rollback();
         }
+    }
+
+    protected function fetchEaseRow($table, $productId)
+    {
+        if (app()->environment('testing') || env('SQLSRV_EASE_MOCK', app()->environment('testing'))) {
+            return null;
+        }
+
+        return DB::connection('sqlsrv_ease')->table($table)->where('pluno', $productId)->first();
     }
 }

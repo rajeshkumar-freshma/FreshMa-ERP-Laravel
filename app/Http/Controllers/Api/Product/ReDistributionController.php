@@ -87,7 +87,10 @@ class ReDistributionController extends Controller
 
     public function redistributiondetails(Request $request)
     {
-        // try {
+        $request->validate([
+            'product_transfer_id' => ['required', 'integer'],
+        ]);
+
         $product_transfer_id = $request->product_transfer_id;
         $product_transfer = ProductTransfer::with('from_warehouse:id,name,code', 'from_store:id,store_name,store_code,phone_number,gst_number', 'to_warehouse:id,name,code', 'to_store:id,store_name,store_code,phone_number,gst_number')->findOrFail($product_transfer_id);
 
@@ -147,6 +150,14 @@ class ReDistributionController extends Controller
 
     public function redistributionstore(Request $request)
     {
+        $request->validate([
+            'transfer_order_number' => ['required', 'string', 'max:100'],
+            'transfer_from' => ['required', 'integer'],
+            'transfer_to' => ['required', 'integer'],
+            'transfer_created_date' => ['required', 'date'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $product_transfer = new ProductTransfer();
@@ -330,6 +341,15 @@ class ReDistributionController extends Controller
 
     public function redistributionupdate(Request $request)
     {
+        $request->validate([
+            'product_transfer_id' => ['required', 'integer'],
+            'transfer_from' => ['required', 'integer'],
+            'transfer_to' => ['required', 'integer'],
+            'transfer_created_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $product_transfer_id = $request->product_transfer_id;
@@ -567,6 +587,10 @@ class ReDistributionController extends Controller
 
     public function producttransferexpenseupdate(Request $request)
     {
+        $request->validate([
+            'product_transfer_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $product_transfer_id = $request->product_transfer_id;
@@ -665,6 +689,10 @@ class ReDistributionController extends Controller
 
     public function producttransfertransporttrackingupdate(Request $request)
     {
+        $request->validate([
+            'product_transfer_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $product_transfer_id = $request->product_transfer_id;

@@ -82,7 +82,10 @@ class WarehouseIndentRequestController extends Controller
 
     public function warehouseindentrequestdetails(Request $request)
     {
-        // try {
+        $request->validate([
+            'warehouse_indent_id' => ['required', 'integer'],
+        ]);
+
         $warehouse_indent_id = $request->warehouse_indent_id;
         $purchasedetails = WarehouseIndentRequest::with(['supplier' => function ($query) use ($warehouse_indent_id) {
             $query->select('id', 'first_name', 'last_name', 'user_type', 'status');
@@ -114,6 +117,15 @@ class WarehouseIndentRequestController extends Controller
 
     public function warehouseindentrequeststore(Request $request)
     {
+        $request->validate([
+            'warehouse_id' => ['required', 'integer'],
+            'supplier_id' => ['required', 'integer'],
+            'request_code' => ['required', 'string', 'max:100'],
+            'request_date' => ['required', 'date'],
+            'expected_date' => ['required', 'date'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;
@@ -190,7 +202,10 @@ class WarehouseIndentRequestController extends Controller
 
     public function warehouseindentrequestedit(Request $request)
     {
-        // try {
+        $request->validate([
+            'warehouse_indent_id' => ['required', 'integer'],
+        ]);
+
         $warehouse_indent_id = $request->warehouse_indent_id;
 
         $warehouse_indent_requests = WarehouseIndentRequest::with(['supplier' => function ($query) use ($warehouse_indent_id) {
@@ -224,6 +239,16 @@ class WarehouseIndentRequestController extends Controller
 
     public function warehouseindentrequestupdate(Request $request)
     {
+        $request->validate([
+            'warehouse_indent_id' => ['required', 'integer'],
+            'warehouse_id' => ['required', 'integer'],
+            'supplier_id' => ['required', 'integer'],
+            'request_date' => ['required', 'date'],
+            'expected_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;

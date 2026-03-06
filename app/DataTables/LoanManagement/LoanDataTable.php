@@ -67,6 +67,15 @@ class LoanDataTable extends DataTable
     public function query(Loan $model): QueryBuilder
     {
         $query = $model->newQuery();
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
         return $this->applyScopes($query);
     }
 
@@ -88,7 +97,7 @@ class LoanDataTable extends DataTable
         return $this->builder()
             ->setTableId('loans-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#loans-table-date-from").val(); data.date_to = $("#loans-table-date-to").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

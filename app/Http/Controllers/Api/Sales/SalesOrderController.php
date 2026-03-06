@@ -159,6 +159,15 @@ class SalesOrderController extends Controller
 
     public function salesorderstore(Request $request)
     {
+        $request->validate([
+            'sales_order_number' => ['required', 'string', 'max:100'],
+            'store_id' => ['required', 'integer'],
+            'delivery_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;
@@ -475,6 +484,15 @@ class SalesOrderController extends Controller
 
     public function salesorderupdate(Request $request)
     {
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+            'store_id' => ['required', 'integer'],
+            'delivery_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $sales_order_id = $request->sales_order_id;
@@ -913,6 +931,10 @@ class SalesOrderController extends Controller
 
     public function salesorderexpenseupdate(Request $request)
     {
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         $sales_order_id = $request->sales_order_id;
         $total_remove_exp_amount = SalesExpense::where("sales_order_id", $sales_order_id)->where('is_billable', 1)->sum('ie_amount');
@@ -1030,6 +1052,10 @@ class SalesOrderController extends Controller
 
     public function salesordertransporttrackingupdate(Request $request)
     {
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         $sales_order_id = $request->sales_order_id;
         // Transaport Tracking Docs Delete
@@ -1105,6 +1131,10 @@ class SalesOrderController extends Controller
 
     public function salesordertransactions(Request $request)
     {
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $sales_order_id = $request->sales_order_id;
@@ -1189,65 +1219,76 @@ class SalesOrderController extends Controller
 
     public function salespaymentstatusupdate(Request $request)
     {
-        DB::beginTransaction();
-        // try {
-        $sales_order_id = $request->sales_order_id;
-
-        $indent_request = SalesOrder::findOrFail($sales_order_id);
-
-        PaymentTransaction::where([['reference_id', $sales_order_id], ['transaction_type', 5]])->delete();
-
-        if ($request->payment_status != null && $indent_request != null) {
-            $indent_request->payment_status = $request->payment_status;
-            $indent_request->save();
-        }
-        DB::commit();
-
-        return response()->json([
-            'status' => 200,
-            'data' => $indent_request,
-            'message' => 'Payment Status Updated Successfully.',
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+            'payment_status' => ['nullable', 'integer'],
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
+
+        DB::beginTransaction();
+        try {
+            $sales_order_id = $request->sales_order_id;
+            $indent_request = SalesOrder::findOrFail($sales_order_id);
+            PaymentTransaction::where([['reference_id', $sales_order_id], ['transaction_type', 5]])->delete();
+
+            if ($request->payment_status != null) {
+                $indent_request->payment_status = $request->payment_status;
+                $indent_request->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'data' => $indent_request,
+                'message' => 'Payment Status Updated Successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Unable to update payment status.',
+            ]);
+        }
     }
 
     public function salesorderstatusupdate(Request $request)
     {
-        DB::beginTransaction();
-        // try {
-        $sales_order_id = $request->sales_order_id;
-
-        $indent_request = SalesOrder::findOrFail($sales_order_id);
-        $indent_request->status = $request->status;
-        $indent_request->remarks = $request->reason;
-        $indent_request->save();
-
-        DB::commit();
-
-        return response()->json([
-            'status' => 200,
-            'data' => $indent_request,
-            'message' => 'Payment Status Updated Successfully.',
+        $request->validate([
+            'sales_order_id' => ['required', 'integer'],
+            'status' => ['required', 'integer'],
+            'reason' => ['nullable', 'string'],
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
+
+        DB::beginTransaction();
+        try {
+            $sales_order_id = $request->sales_order_id;
+            $indent_request = SalesOrder::findOrFail($sales_order_id);
+            $indent_request->status = $request->status;
+            $indent_request->remarks = $request->reason;
+            $indent_request->save();
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'data' => $indent_request,
+                'message' => 'Payment Status Updated Successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Unable to update order status.',
+            ]);
+        }
     }
 
     public function salespaymenttransactionedit(Request $request)
     {
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+        ]);
+
         try {
             $transaction_id = $request->transaction_id;
 
@@ -1260,7 +1301,6 @@ class SalesOrderController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error($e);
-            DB::rollback();
             return response()->json([
                 'status' => 400,
                 'message' => 'Data not found.',
@@ -1270,12 +1310,20 @@ class SalesOrderController extends Controller
 
     public function salespaymenttransactionupdate(Request $request)
     {
-        DB::beginTransaction();
-        // try {
-        $transaction_id = $request->transaction_id;
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+            'payment_details' => ['required', 'string'],
+        ]);
 
-        if (isset($request->payment_details)) {
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
             $payment_details = json_decode($request->payment_details);
+            if (!is_array($payment_details) || count($payment_details) === 0) {
+                throw new \InvalidArgumentException('Invalid payment_details payload.');
+            }
+
+            $payment_transaction = null;
             foreach ($payment_details as $key => $payment_detail) {
                 $payment_transaction = PaymentTransaction::findOrFail($transaction_id);
                 $payment_transaction->payment_type_id = (int) $payment_detail->payment_type_id;
@@ -1285,111 +1333,103 @@ class SalesOrderController extends Controller
                 $payment_transaction->note = @$payment_detail->note;
                 $payment_transaction->save();
             }
+
+            if (isset($request->payment_transaction_documents) && count($request->payment_transaction_documents) > 0 && $request->file('payment_transaction_documents')) {
+                CommonComponent::payment_transaction_documents($request->file('payment_transaction_documents'), 2, $payment_transaction->id); // 2=> Sales
+            }
+
+            $sales_order_details = SalesOrder::with('sales_order_transactions')->findOrFail($payment_transaction->reference_id);
+
+            $paid_amount = $sales_order_details->sales_order_transactions->sum('amount');
+
+            $total_amount = $sales_order_details->total_amount;
+
+            if ($paid_amount == 0) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // Pending
+                $sales_order_details->save();
+            } else if ($paid_amount < $total_amount) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // UnPaid
+                $sales_order_details->save();
+            } else if ($paid_amount >= $total_amount) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $sales_order_details->save();
+            }
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'data' => $sales_order_details,
+                'message' => 'Transaction Updated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Transaction update failed.',
+            ]);
         }
-
-        Log::info($request->payment_transaction_documents);
-        if (isset($request->payment_transaction_documents) && count($request->payment_transaction_documents) > 0 && $request->file('payment_transaction_documents')) {
-            CommonComponent::payment_transaction_documents($request->file('payment_transaction_documents'), 2, $payment_transaction->id); // 2=> Sales
-        }
-
-        $sales_order_details = SalesOrder::with('sales_order_transactions')->findOrFail($payment_transaction->reference_id);
-
-        $paid_amount = $sales_order_details->sales_order_transactions->sum('amount');
-
-        $total_amount = $sales_order_details->total_amount;
-
-        if ($paid_amount == 0) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // Pending
-            $sales_order_details->save();
-        } else if ($paid_amount < $total_amount) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // UnPaid
-            $sales_order_details->save();
-        } else if ($paid_amount >= $total_amount) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // UnPaid
-            $sales_order_details->save();
-        }
-        DB::commit();
-        return response()->json([
-            'status' => 200,
-            'data' => $sales_order_details,
-            'message' => 'Transaction Updated successfully.',
-        ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
     }
 
     public function salespaymenttransactiondelete(Request $request)
     {
-        // try {
-        $transaction_id = $request->transaction_id;
-
-        $sales_order_id = $request->sales_order_id;
-
-        PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
-
-        PaymentTransaction::destroy($transaction_id);
-
-        $sales_order_details = SalesOrder::with('sales_order_transactions')->findOrFail($sales_order_id);
-
-        $paid_amount = $sales_order_details->sales_order_transactions->sum('amount');
-
-        $total_amount = $sales_order_details->total_amount;
-
-        if ($paid_amount == 0) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // Pending
-            $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
-            $sales_order_details->save();
-        } else if ($paid_amount < $total_amount) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // UnPaid
-            $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
-            $sales_order_details->save();
-        } else if ($paid_amount >= $total_amount) {
-            $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // UnPaid
-            $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
-            $sales_order_details->save();
-        }
-
-        $sale_order_detail = SalesOrder::findOrFail($sales_order_id);
-
-        return response()->json([
-            'status' => 200,
-            'datas' => $sale_order_detail,
-            'message' => 'Payment Transaction Deleted Successfully.',
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+            'sales_order_id' => ['required', 'integer'],
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
+
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
+            $sales_order_id = $request->sales_order_id;
+
+            PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
+            PaymentTransaction::destroy($transaction_id);
+
+            $sales_order_details = SalesOrder::with('sales_order_transactions')->findOrFail($sales_order_id);
+            $paid_amount = $sales_order_details->sales_order_transactions->sum('amount');
+            $total_amount = $sales_order_details->total_amount;
+
+            if ($paid_amount == 0) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // Pending
+                $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
+                $sales_order_details->save();
+            } else if ($paid_amount < $total_amount) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // UnPaid
+                $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
+                $sales_order_details->save();
+            } else if ($paid_amount >= $total_amount) {
+                $sales_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $sales_order_details->delivered_date = now()->format('Y-m-d H:i:s');
+                $sales_order_details->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'datas' => $sales_order_details,
+                'message' => 'Payment Transaction Deleted Successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollBack();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Unable to delete transaction.',
+            ]);
+        }
     }
 
     public function paymenttransactiondelete(Request $request)
     {
-        // try {
-        $transaction_docs_id = $request->transaction_docs_id;
+        $request->validate([
+            'transaction_docs_id' => ['required', 'integer'],
+        ]);
 
-        PaymentTransactionDocument::findorfail($transaction_docs_id)->delete();
+        PaymentTransactionDocument::findorfail($request->transaction_docs_id)->delete();
 
         return response()->json([
             'status' => 200,
             'message' => 'Payment Transaction Document Deleted Successfully.',
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
     }
 }

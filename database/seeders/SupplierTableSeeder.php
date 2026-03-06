@@ -10,20 +10,23 @@ use Illuminate\Support\Facades\DB;
 
 class SupplierTableSeeder extends Seeder
 {
-
-    /**
-     * Auto generated seed file
-     *
-     * @return void
-     */
     public function run()
     {
-
-        // Clear existing suppliers and related data
+        // Delete ONLY supplier-related data
         DB::table('users')->where('user_type', 2)->delete();
-        DB::table('user_infos')->delete();
-        DB::table('salary_details')->delete();
-        // DB::unprepared('SET IDENTITY_INSERT admins ON');
+        DB::table('user_infos')->where('admin_type', 2)->delete();
+        DB::table('salary_details')->where('admin_type', 2)->delete();
+
+        // Get master records
+        $country = \App\Models\Country::first();
+        $state = \App\Models\State::first();
+        $city = \App\Models\City::first();
+        $currency = \App\Models\Currency::first();
+
+        if (!$country || !$state || !$city || !$currency) {
+            $this->command->error('Location masters missing for Supplier.');
+            return;
+        }
 
         $suppliers = [
             [
@@ -35,7 +38,7 @@ class SupplierTableSeeder extends Seeder
                 'user_code' => 'CODE123',
                 'email_verified_at' => now(),
                 'phone_verified_at' => now(),
-                'user_type' => 2, //1=> Vendor in admins table
+                'user_type' => 2,
                 'api_token' => '',
                 'fcm_token' => 'FCM_TOKEN_HERE',
                 'address1' => '123 Main St',
@@ -56,61 +59,58 @@ class SupplierTableSeeder extends Seeder
                 'user_code' => 'CODE456',
                 'email_verified_at' => now(),
                 'phone_verified_at' => now(),
-                'user_type' => 2, //1=> Vendor in admins table
+                'user_type' => 2,
                 'api_token' => '',
                 'fcm_token' => 'FCM_TOKEN_HERE',
-                'address1' => '123 Main St',
-                'address2' => 'Apt 4B',
+                'address1' => '456 Market St',
+                'address2' => 'Suite 10',
                 'address3' => null,
                 'voipToken' => 'VOIP_TOKEN_HERE',
                 'lat' => '40.7128',
                 'lon' => '74.0060',
-                'os' => 'iOS',
+                'os' => 'Android',
                 'status' => 1,
             ],
         ];
 
         foreach ($suppliers as $supplierData) {
-            // Create the supplier
+
             $supplier = Supplier::create($supplierData);
 
-            // Create dummy UserInfo for each supplier
             UserInfo::create([
-                'admin_type' => 2, // Supplier
+                'admin_type' => 2,
                 'user_id' => $supplier->id,
-                'company' => 'Company ',
+                'company' => 'Company Name',
                 'website' => 'https://example.com',
                 'address' => '1234 Example St',
-                'country_id' => rand(1, 10), // Example IDs; adjust as needed
-                'state_id' => rand(1, 10),
-                'city_id' => rand(1, 10),
-                'currency_id' => rand(1, 10),
-                'gst_number' => 'GST',
+                'country_id' => $country->id,
+                'state_id' => $state->id,
+                'city_id' => $city->id,
+                'currency_id' => $currency->id,
+                'gst_number' => 'GST123',
                 'joined_at' => now(),
-                'pan_number' => 'PAN',
-                'aadhar_number' => 'AADHAR',
-                'esi_number' => 'ESI',
-                'pf_number' => 'PF',
-                'account_number' => 'ACC',
-                'bank_name' => 'Bank ',
-                'name_as_per_record' => 'Name ',
-                'branch_name' => 'Branch ',
-                'ifsc_code' => 'IFSC',
+                'pan_number' => 'PAN123',
+                'aadhar_number' => 'AADHAR123',
+                'esi_number' => 'ESI123',
+                'pf_number' => 'PF123',
+                'account_number' => 'ACC123',
+                'bank_name' => 'Example Bank',
+                'name_as_per_record' => 'Supplier Name',
+                'branch_name' => 'Main Branch',
+                'ifsc_code' => 'IFSC123',
             ]);
 
-            // Create dummy SalaryDetail for each supplier
             SalaryDetail::create([
-                'admin_type' => 2, // Supplier
+                'admin_type' => 2,
                 'user_id' => $supplier->id,
-                'salary_type' => 3, //Monthly
-                'amount_type' => 1, //1 fixed
+                'salary_type' => 3,
+                'amount_type' => 1,
                 'amount' => rand(30000, 50000),
                 'percentage' => rand(1, 100),
-                'remarks' => 'Dummy salary detail for ' . $supplier->first_name,
+                'remarks' => 'Dummy salary detail',
             ]);
         }
 
-        // DB::unprepared('SET IDENTITY_INSERT admins OFF');
-
+        $this->command->info('Suppliers seeded successfully.');
     }
 }

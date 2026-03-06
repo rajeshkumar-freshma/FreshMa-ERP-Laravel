@@ -90,7 +90,10 @@ class SpoilageController extends Controller
 
     public function spoilagedetail(Request $request)
     {
-        // try {
+        $request->validate([
+            'spoilage_id' => ['required', 'integer'],
+        ]);
+
         $spoilage_id = $request->spoilage_id;
         $spoilage = Spoilage::with('from_warehouse:id,name,code,status', 'from_store:id,store_name,store_code,phone_number,gst_number', 'to_warehouse:id,name,code,status', 'supplier_details:id,first_name,last_name,user_code')->findOrFail($spoilage_id);
 
@@ -122,7 +125,15 @@ class SpoilageController extends Controller
 
     public function spoilagestore(Request $request)
     {
-        // DB::beginTransaction();
+        $request->validate([
+            'spoilage_order_number' => ['required', 'string', 'max:100'],
+            'spoilage_in' => ['required', 'integer'],
+            'spoilage_date' => ['required', 'date'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
+
+        DB::beginTransaction();
         // dd($request->all());
         // try {
         $spoilage = new Spoilage();
@@ -308,6 +319,14 @@ class SpoilageController extends Controller
 
     public function spoilageupdate(Request $request)
     {
+        $request->validate([
+            'spoilage_id' => ['required', 'integer'],
+            'spoilage_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
+
         // return $request->all();
         DB::beginTransaction();
         // try {
@@ -611,6 +630,10 @@ class SpoilageController extends Controller
 
     public function spoilageexpenseupdate(Request $request)
     {
+        $request->validate([
+            'spoilage_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $spoilage_id = $request->spoilage_id;
@@ -708,6 +731,10 @@ class SpoilageController extends Controller
 
     public function spoilagetransporttrackingupdate(Request $request)
     {
+        $request->validate([
+            'spoilage_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $spoilage_id = $request->spoilage_id;

@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class ModelHasRolesTableSeeder extends Seeder
 {
@@ -14,29 +16,15 @@ class ModelHasRolesTableSeeder extends Seeder
      */
     public function run()
     {
-        \DB::table('model_has_roles')->delete();
+        $superAdminRole = Role::query()
+            ->where('name', 'Super Admin')
+            ->where('guard_name', 'admin')
+            ->first();
 
-        \DB::table('model_has_roles')->insert([
-            [
-                'role_id' => 1,
-                'model_type' => 'App\\Models\\Admin',
-                'model_id' => 1,
-            ],
-            [
-                'role_id' => 2,
-                'model_type' => 'App\\Models\\Admin',
-                'model_id' => 2,
-            ],
-            [
-                'role_id' => 3,
-                'model_type' => 'App\\Models\\Admin',
-                'model_id' => 3,
-            ],
-            [
-                'role_id' => 4,
-                'model_type' => 'App\\Models\\Admin',
-                'model_id' => 4,
-            ],
-        ]);
+        $admin = Admin::query()->where('user_type', 1)->orderBy('id')->first();
+
+        if ($admin && $superAdminRole) {
+            $admin->syncRoles([$superAdminRole->name]);
+        }
     }
 }

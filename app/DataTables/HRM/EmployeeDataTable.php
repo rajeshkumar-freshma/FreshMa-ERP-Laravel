@@ -48,7 +48,21 @@ class EmployeeDataTable extends DataTable
      */
     public function query(Staff $model): QueryBuilder
     {
-        return $model->newQuery();
+        $query = $model->newQuery();
+
+        if ($this->request()->filled('status')) {
+            $query->where('status', $this->request()->get('status'));
+        }
+
+        if ($this->request()->filled('date_from')) {
+            $query->where('created_at', '>=', $this->request()->get('date_from') . ' 00:00:00');
+        }
+
+        if ($this->request()->filled('date_to')) {
+            $query->where('created_at', '<=', $this->request()->get('date_to') . ' 23:59:59');
+        }
+
+        return $query;
     }
 
     /**
@@ -66,7 +80,7 @@ class EmployeeDataTable extends DataTable
         return $this->builder()
             ->setTableId('employee-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#employee-table-date-from").val(); data.date_to = $("#employee-table-date-to").val(); data.status = $("#employee-table-status-filter").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)

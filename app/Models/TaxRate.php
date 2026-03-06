@@ -18,13 +18,18 @@ class TaxRate extends Model
     protected static function booted()
     {
         static::creating(function ($data) {
-            $data->created_by = Auth::user()->id;
-            $data->updated_by = Auth::user()->id;
+            $data->created_by = static::resolveActorId();
+            $data->updated_by = static::resolveActorId();
         });
 
         static::updating(function ($data) {
-            $data->updated_by = Auth::user()->id;
+            $data->updated_by = static::resolveActorId();
         });
+    }
+
+    private static function resolveActorId(): int
+    {
+        return Auth::guard('admin')->id() ?? Auth::guard('api')->id() ?? Auth::id() ?? 1;
     }
 
     /* Relationship Container */

@@ -204,6 +204,16 @@ class PurchaseController extends Controller
 
     public function purchasestore(Request $request)
     {
+        $request->validate([
+            'purchase_order_number' => ['required', 'string', 'max:100'],
+            'warehouse_id' => ['required', 'integer'],
+            'supplier_id' => ['required', 'integer'],
+            'delivery_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
+
         DB::beginTransaction();
         // try {
         $imagePath = null;
@@ -325,6 +335,10 @@ class PurchaseController extends Controller
 
     public function purchaseorderexpense(Request $request)
     {
+        $request->validate([
+            'purchase_order_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         // Expense Details store
@@ -489,6 +503,15 @@ class PurchaseController extends Controller
 
     public function purchaseorderupdate(Request $request)
     {
+        $request->validate([
+            'purchase_order_id' => ['required', 'integer'],
+            'warehouse_id' => ['required', 'integer'],
+            'supplier_id' => ['required', 'integer'],
+            'delivery_date' => ['required', 'date'],
+            'status' => ['required', 'integer'],
+            'total_amount' => ['required', 'numeric'],
+            'products' => ['required', 'string'],
+        ]);
 
         DB::beginTransaction();
         // try {
@@ -699,6 +722,10 @@ class PurchaseController extends Controller
 
     public function purchaseorderexpenseupdate(Request $request)
     {
+        $request->validate([
+            'purchase_order_id' => ['required', 'integer'],
+        ]);
+
         DB::beginTransaction();
         // try {
         // Expense Details store
@@ -1006,6 +1033,10 @@ class PurchaseController extends Controller
 
     public function purchasepaymenttransactionedit(Request $request)
     {
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+        ]);
+
         try {
             $transaction_id = $request->transaction_id;
 
@@ -1028,12 +1059,20 @@ class PurchaseController extends Controller
 
     public function purchasepaymenttransactionupdate(Request $request)
     {
-        DB::beginTransaction();
-        // try {
-        $transaction_id = $request->transaction_id;
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
+            'payment_details' => ['required', 'string'],
+        ]);
 
-        if (isset($request->payment_details)) {
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
+            $payment_transaction = null;
             $payment_details = json_decode($request->payment_details);
+            if (!is_array($payment_details) || count($payment_details) === 0) {
+                throw new \InvalidArgumentException('Invalid payment_details payload.');
+            }
+
             foreach ($payment_details as $key => $payment_detail) {
                 $payment_transaction = PaymentTransaction::findOrFail($transaction_id);
                 $payment_transaction->payment_type_id = (int)$payment_detail->payment_type_id;
@@ -1049,90 +1088,96 @@ class PurchaseController extends Controller
                     CommonComponent::payment_transaction_documents($request->file('payment_transaction_documents'), 1, $payment_transaction->id); // 1=> Purchase Document
                 }
             }
+
+            $purchase_order_details = PurchaseOrder::with('purchase_order_transactions')->findOrFail($payment_transaction->reference_id);
+
+            $paid_amount = $purchase_order_details->purchase_order_transactions->sum('amount');
+
+            $total_amount = $purchase_order_details->total;
+
+            if ($paid_amount == 0) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
+                $purchase_order_details->save();
+            } else if ($paid_amount < $total_amount) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
+                $purchase_order_details->save();
+            } else if ($paid_amount >= $total_amount) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $purchase_order_details->save();
+            }
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'data' => $purchase_order_details,
+                'message' => 'Transaction Updated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollback();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Transaction update failed.',
+            ]);
         }
-
-        $purchase_order_details = PurchaseOrder::with('purchase_order_transactions')->findOrFail($payment_transaction->reference_id);
-
-        $paid_amount = $purchase_order_details->purchase_order_transactions->sum('amount');
-
-        $total_amount = $purchase_order_details->total;
-
-        if ($paid_amount == 0) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
-            $purchase_order_details->save();
-        } else if ($paid_amount < $total_amount) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
-            $purchase_order_details->save();
-        } else if ($paid_amount >= $total_amount) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
-            $purchase_order_details->save();
-        }
-        DB::commit();
-        return response()->json([
-            'status' => 200,
-            'data' => $purchase_order_details,
-            'message' => 'Transaction Updated successfully.',
-        ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
     }
 
     public function purchasepaymenttransactiondelete(Request $request)
     {
-        // try {
-        $transaction_id = $request->transaction_id;
-
-        // $purchase_order_id = $request->purchase_order_id;
-
-        $trans = PaymentTransaction::where('id', $transaction_id)->first();
-
-        $purchase_order_id = $trans->reference_id;
-        PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
-        PaymentTransaction::destroy($transaction_id);
-
-        $purchase_order_details = PurchaseOrder::with('purchase_order_transactions')->findOrFail($purchase_order_id);
-
-        $paid_amount = $purchase_order_details->purchase_order_transactions->sum('amount');
-
-        $total_amount = $purchase_order_details->total;
-
-        if ($paid_amount == 0) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
-            $purchase_order_details->save();
-        } else if ($paid_amount < $total_amount) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
-            $purchase_order_details->save();
-        } else if ($paid_amount >= $total_amount) {
-            $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
-            $purchase_order_details->save();
-        }
-
-        $sale_order_detail = PurchaseOrder::findOrFail($purchase_order_id);
-
-
-        return response()->json([
-            'status' => 200,
-            'datas' => $sale_order_detail,
-            'message' => 'Payment Transaction Deleted Successfully.',
+        $request->validate([
+            'transaction_id' => ['required', 'integer'],
         ]);
-        // } catch (\Exception $e) {
-        //     Log::error($e);
-        //     DB::rollback();
-        //     return response()->json([
-        //         'status' => 400,
-        //         'message' => 'Data not found.',
-        //     ]);
-        // }
+
+        DB::beginTransaction();
+        try {
+            $transaction_id = $request->transaction_id;
+            $trans = PaymentTransaction::where('id', $transaction_id)->firstOrFail();
+            $purchase_order_id = $trans->reference_id;
+
+            PaymentTransactionDocument::where('reference_id', $transaction_id)->delete();
+            PaymentTransaction::destroy($transaction_id);
+
+            $purchase_order_details = PurchaseOrder::with('purchase_order_transactions')->findOrFail($purchase_order_id);
+            $paid_amount = $purchase_order_details->purchase_order_transactions->sum('amount');
+            $total_amount = $purchase_order_details->total;
+
+            if ($paid_amount == 0) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 2; // UnPaid
+                $purchase_order_details->save();
+            } else if ($paid_amount < $total_amount) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 3; // Pending
+                $purchase_order_details->save();
+            } else if ($paid_amount >= $total_amount) {
+                $purchase_order_details->payment_status = $request->payment_status != null ? $request->payment_status : 1; // Paid
+                $purchase_order_details->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 200,
+                'datas' => $purchase_order_details,
+                'message' => 'Payment Transaction Deleted Successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            DB::rollback();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Unable to delete transaction.',
+            ]);
+        }
     }
 
     public function multiplepurchaseorderpaymentupdate(Request $request)
     {
+        $request->validate([
+            'supplier_id' => ['required', 'integer'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'payment_type' => ['required', 'integer'],
+            'transaction_date' => ['nullable', 'date'],
+            'purchase_order_id' => ['required', 'array', 'min:1'],
+            'purchase_order_id.*' => ['integer'],
+        ]);
+
         DB::beginTransaction();
         try {
             $supplier_id = $request->supplier_id;
@@ -1232,7 +1277,6 @@ class PurchaseController extends Controller
 
     public function useradvancecreditdebit($referrence_table, $referrence_id, $supplier_id, $amount, $creditdebit)
     {
-        DB::beginTransaction();
         if ($amount > 0) {
             $user_advance = UserAdvance::where([['user_id', $supplier_id]])->first();
             if ($user_advance == null) {
@@ -1255,8 +1299,6 @@ class PurchaseController extends Controller
             $advancehistory->type = $creditdebit; // Credit is 1 and 2 is debit
             $advancehistory->amount = $amount;
             $advancehistory->save();
-
-            DB::commit();
         }
     }
 }

@@ -2,7 +2,7 @@
 <td class="no-wrap d-flex">
     <div class="btn-group">
         @if (auth()->user()->can('Denomination Edit') || auth()->user()->can('Denomination View'))
-            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+            <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Action
             </button>
@@ -20,3 +20,4 @@
         </div>
     </td>
     <!--end::Action--->
+

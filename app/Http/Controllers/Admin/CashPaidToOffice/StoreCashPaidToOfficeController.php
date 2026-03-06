@@ -12,7 +12,6 @@ use App\Models\CashRegisterTransaction;
 use App\Models\Denomination;
 use App\Models\DenominationDateAmount;
 use App\Models\DenominationType;
-use App\Models\Department;
 use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -274,8 +273,6 @@ class StoreCashPaidToOfficeController extends Controller
         $cash_paid_to_office->status = $request->status;
         $cash_paid_to_office->save();
 
-        $cash_denominations = Denomination::findOrFail($id);
-
         $totalAmount = (int) $request->total;
         if ($cash_paid_to_office->amount !== $totalAmount) {
             return back()->withInput()->with('error', 'Amount and total must be equal');
@@ -327,7 +324,7 @@ class StoreCashPaidToOfficeController extends Controller
     public function destroy($id)
     {
         try {
-            Department::findOrFail($id)->delete();
+            CashPaidToOffice::findOrFail($id)->delete();
 
             return redirect()->route('admin.cash-paid-office.index')->with('success', 'Cash Paid Deleted Successfully');
         } catch (\Exception $e) {
@@ -419,7 +416,7 @@ class StoreCashPaidToOfficeController extends Controller
         if (!$lastUpdatedRecord) {
             return response()->json([
                 'status' => 200,
-                'lastUpdatedDate' => 000 - 00 - 00,
+                'lastUpdatedDate' => null,
                 'notUpdatedDates' => [Carbon::now()->format('Y-m-d')],
 
             ]);

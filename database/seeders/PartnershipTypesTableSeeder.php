@@ -16,9 +16,9 @@ class PartnershipTypesTableSeeder extends Seeder
     {
 
 
-        \DB::table('partnership_types')->delete();
+        \DB::table('partnership_types')->truncate();
 
-        \DB::unprepared('SET IDENTITY_INSERT partnership_types ON');
+        // \DB::unprepared('SET IDENTITY_INSERT partnership_types ON');
 
         \DB::table('partnership_types')->insert(array (
             0 =>
@@ -59,7 +59,8 @@ class PartnershipTypesTableSeeder extends Seeder
             ),
         ));
 
-        \DB::unprepared('SET IDENTITY_INSERT partnership_types OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT partnership_types OFF');
+        
 
 
     }

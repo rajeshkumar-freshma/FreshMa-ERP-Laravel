@@ -1,5 +1,8 @@
 <!--begin::Table-->
-{{ $dataTable->table() }}
+@include('pages.partials._datatable-toolbar-template', [
+    'tableId' => 'bulkproducttransfer-table',
+    'dataTable' => $dataTable
+])
 <!--end::Table-->
 
 {{-- Inject Scripts --}}
@@ -9,7 +12,7 @@
 
     <script>
         $(document).ready(function() {
-            var table = $('#producttransfer-table');
+            var table = $('#bulkproducttransfer-table');
             table.on('blur', '.editable', function() {
                 console.log('test');
                 var id = $(this).data('id');
@@ -26,22 +29,13 @@
                     },
                     success: function(response) {
                         // Handle success
-                        table.ajax.reload();
+                        table.DataTable().ajax.reload();
                     },
                     error: function(xhr) {
                         // Handle error
                         console.log(xhr.responseText);
                     }
                 });
-                // data.bill_no = $('#bill_no').val();
-                // data.machine_id = $('#machine_id').val();
-                // data.from_date = $('#from_date').val();
-                // data.to_date = $('#to_date').val();
-            });
-
-            $('.filter_button').on('click', function() {
-                table.DataTable().ajax.reload();
-                return false;
             });
         });
     </script>

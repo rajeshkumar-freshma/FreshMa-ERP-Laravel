@@ -54,17 +54,23 @@ class MachineSaletoSaleOrderJob implements ShouldQueue
 
             $paymentTypeId = PaymentType::where('slug', 'cash-on-hand')->value('id');
             if (!$paymentTypeId) {
-                $paymentTypeId = PaymentType::first()->value('id');
+                $paymentTypeId = PaymentType::query()->value('id');
             }
             Log::info("payment Type Id");
             Log::info($paymentTypeId);
 
-            // Fetch Machine Bill Data
-            $from_date = date('Y-m-d 00:00:00');
-            $to_date = date('Y-m-d 23:59:59');
-
-            $machinelivesalebills = LiveSalesBill::whereBetween('ItemsaleDateTime', [$from_date, $to_date])
-                ->orderBy('ItemsaleDateTime', 'ASC')
+            // Convert only pending bills to keep each run fast and incremental.
+            $batchSize = (int) env('SALES_ORDER_SYNC_BATCH_SIZE', 2000);
+            $machinelivesalebills = DB::table('live_sales_bills as l')
+                ->join('machine_data as m', 'm.Slno', '=', 'l.MachineName')
+                ->leftJoin('sales_orders as s', function ($join) {
+                    $join->whereRaw('s.bill_no::text = l."billNo"::text')
+                        ->on('s.machine_id', '=', 'm.id');
+                })
+                ->whereNull('s.id')
+                ->select('l.*')
+                ->orderBy('l.id', 'ASC')
+                ->limit($batchSize)
                 ->get();
             Log::info("machine live sales stored in sales orders tables start");
             // Log::info($machinelivesalebills);
@@ -74,19 +80,34 @@ class MachineSaletoSaleOrderJob implements ShouldQueue
                 // Looping Bill Details
                 Log::info("machine live sales stored entered");
                 // Log::info($machinelivesalebill);
-                $sale_order_checks = SalesOrder::where([['bill_no', $machinelivesalebill->billNo], ['machine_id', $machinelivesalebill->MachineName]])->whereBetween('delivered_date', [$from_date, $to_date])->first();
+                $machine_data_check_exists = MachineData::where('Slno', $machinelivesalebill->MachineName)->first();
+                $mappedMachineId = $machine_data_check_exists?->id;
+                if (empty($mappedMachineId)) {
+                    Log::warning('Skipping sale conversion: machine mapping not found', [
+                        'billNo' => $machinelivesalebill->billNo,
+                        'machine_name' => $machinelivesalebill->MachineName,
+                    ]);
+                    continue;
+                }
+
+                $sale_order_checks = SalesOrder::where([
+                    ['bill_no', $machinelivesalebill->billNo],
+                    ['machine_id', $mappedMachineId],
+                ])->first();
                 Log::info("sale_order_checks");
                 // Log::info($sale_order_checks);
                 $saleBillDetails = LiveSalesBillDetail::where([['live_sales_bill_id', $machinelivesalebill->id], ['MachineName', $machinelivesalebill->MachineName]])->get();
                 Log::info("saleBillDetails");
                 // Log::info($saleBillDetails);
-                $machine_data_check_exists = MachineData::where('Slno', $machinelivesalebill->MachineName)->first();
                 Log::info("machine_data_check_exists");
                 // Log::info($machine_data_check_exists);
                 if (empty($sale_order_checks) && count($saleBillDetails) > 0) {
                     Log::info("saleBillDetails if condtions entered");
                     $total_amount = 0;
                     $invoice_number = CommonComponent::invoice_no('sale_order', 'WLK-');
+                    if (SalesOrder::where('invoice_number', $invoice_number)->exists()) {
+                        $invoice_number = $invoice_number . '-' . now()->format('YmdHisv');
+                    }
                     $order_sales = new SalesOrder();
                     $order_sales->sales_from = 1;
                     $order_sales->sales_type = 1;
@@ -94,7 +115,7 @@ class MachineSaletoSaleOrderJob implements ShouldQueue
                     $order_sales->invoice_number = $invoice_number;
                     $order_sales->delivered_date = $machinelivesalebill->ItemsaleDateTime;
                     $order_sales->bill_no = $machinelivesalebill->billNo;
-                    $order_sales->machine_id = $machinelivesalebill->MachineName;
+                    $order_sales->machine_id = $mappedMachineId;
                     $order_sales->store_id = @$machine_data_check_exists->store_id;
                     $order_sales->warehouse_id = @$machine_data_check_exists->store_details != null ? $machine_data_check_exists->store_details->warehouse_id : null;
                     // $order_sales->delivered_date = Carbon::createFromFormat('d/m/Y H:i:s', $machinelivesalebill->ItemsaleDateTime)->format('Y-m-d H:i:s');;
@@ -147,7 +168,7 @@ class MachineSaletoSaleOrderJob implements ShouldQueue
                         $sales_order_detail->save();
 
                         $quantity = -$sales_order_detail->given_quantity;
-                        if ($quantity != 0) {
+                        if ($quantity != 0 && !empty($order_sales->store_id)) {
                             $store_stock_detail_exists = StoreStockUpdate::where([['store_id', $order_sales->store_id], ['product_id', $product_data->id], ['status', 1]])->orderBy('id', 'DESC')->first();
                             $store_stock_detail = new StoreStockUpdate();
                             $store_stock_detail->store_id = $order_sales->store_id;
@@ -162,16 +183,18 @@ class MachineSaletoSaleOrderJob implements ShouldQueue
                             $store_stock_detail->save();
                         }
 
-                        $store_stock_detail = StoreStockUpdate::where([['store_id', $order_sales->store_id], ['product_id', $product_data->id], ['status', 1]])->orderBy('id', 'DESC')->first();
-                        $store_inventory = StoreInventoryDetail::where([['store_id', $order_sales->store_id], ['product_id', $product_data->id], ['status', 1]])->first();
-                        if ($store_inventory == null) {
-                            $store_inventory = new StoreInventoryDetail();
-                            $store_inventory->store_id = $order_sales->store_id;
-                            $store_inventory->product_id = $product_data->id;
+                        if (!empty($order_sales->store_id)) {
+                            $store_stock_detail = StoreStockUpdate::where([['store_id', $order_sales->store_id], ['product_id', $product_data->id], ['status', 1]])->orderBy('id', 'DESC')->first();
+                            $store_inventory = StoreInventoryDetail::where([['store_id', $order_sales->store_id], ['product_id', $product_data->id], ['status', 1]])->first();
+                            if ($store_inventory == null) {
+                                $store_inventory = new StoreInventoryDetail();
+                                $store_inventory->store_id = $order_sales->store_id;
+                                $store_inventory->product_id = $product_data->id;
+                            }
+                            $store_inventory->weight = @$store_inventory->weight + @$quantity;
+                            $store_inventory->status = 1;
+                            $store_inventory->save();
                         }
-                        $store_inventory->weight = @$store_inventory->weight + @$quantity;
-                        $store_inventory->status = 1;
-                        $store_inventory->save();
 
                         $fishcutting = FishCuttingProductMap::where('main_product_id', $product_data->id)->orderbyDesc('id')->first();
                         if ($fishcutting != null) {

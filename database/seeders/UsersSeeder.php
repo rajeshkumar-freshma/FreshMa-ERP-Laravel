@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Admin;
 use App\Core\CommonComponent;
+use App\Models\Country;
 use App\Models\User;
 use App\Models\UserInfo;
 use Faker\Generator;
@@ -20,7 +21,9 @@ class UsersSeeder extends Seeder
      */
     public function run(Generator $faker)
     {
-        DB::table('users')->delete();
+        DB::table('user_infos')->truncate();
+        DB::table('admins')->truncate();
+        DB::table('users')->truncate();
         
         $demoUser = User::create([
             'first_name' => 'Walk',
@@ -38,8 +41,8 @@ class UsersSeeder extends Seeder
 
         if (ENV('APP_ENV') == 'production') {
             $demoUser2 = Admin::create([
-                'first_name' => 'Rajesh',
-                'last_name' => 'Kumar',
+                'first_name' => 'RRK Retail',
+                'last_name' => 'Private Limited',
                 'email' => 'support@freshma.in',
                 'password' => Hash::make('~%eV342_Eu6*'),
                 'phone_number' => '9841262993',
@@ -50,8 +53,8 @@ class UsersSeeder extends Seeder
             ]);
         } else {
             $demoUser2 = Admin::create([
-                'first_name' => 'Vijay',
-                'last_name' => 'Kumar',
+                'first_name' => 'CodeTez',
+                'last_name' => 'Technologies',
                 'email' => 'support@codetez.com',
                 'password' => Hash::make('12345678'),
                 'phone_number' => '1234567890',
@@ -67,23 +70,16 @@ class UsersSeeder extends Seeder
 
     private function addDummyInfo($user, $type)
     {
-        if ($type == 'admin') {
-            $user_id = null;
-            $admin_id = 1;
-            $admin_type = 1;
-        } else {
-            $user_id = 1;
-            $admin_id = null;
-            $admin_type = 2;
-        }
+        $admin_type = $type == 'admin' ? 1 : 2;
+        $countryId = Country::query()->value('id');
 
         $dummyInfo = [
             'admin_type' => $admin_type,
-            'user_id' => $user_id,
-            'admin_id' => $admin_id,
+            'user_id' => null,
+            'admin_id' => null,
             'company' => 'FreshMa',
             'website' => 'https://www.freshma.in/',
-            'country_id' => 1,
+            'country_id' => $countryId,
         ];
 
         $info = new UserInfo();

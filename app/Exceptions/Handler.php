@@ -3,10 +3,16 @@
 namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use ErrorException;
 use Throwable;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 
@@ -43,19 +49,15 @@ class Handler extends ExceptionHandler
 
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        if (!($request->expectsJson() || collect($request->route()->middleware())->contains('api'))) {
+        $isApi = $request->expectsJson() || ($request->route() && collect($request->route()->middleware())->contains('api'));
+        if (!$isApi) {
             return redirect()->guest(route('admin.login'));
         }
 
-        abort(
-            response()->json(
-                [
-                    'status' => '401',
-                    'message' => 'Unauthenticated',
-                ],
-                401
-            )
-        );
+        return response()->json([
+            'status' => 401,
+            'message' => 'Unauthenticated',
+        ], 401);
     }
 
     /**
@@ -69,19 +71,97 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            if ($e instanceof \Exception) {
-                $message = $e->getMessage();
+            if ($this->shouldNotifyTelegram($e)) {
+                $message = app()->environment('production')
+                    ? class_basename($e) . ': ' . $e->getMessage()
+                    : (string) $e;
                 $this->sendTelegramMessage($message);
             }
 
         });
     }
 
+    public function render($request, Throwable $exception)
+    {
+        $isApi = $request->expectsJson() || ($request->route() && collect($request->route()->middleware())->contains('api'));
+        if ($isApi) {
+            if ($exception instanceof AuthenticationException) {
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            if ($exception instanceof AuthorizationException) {
+                return response()->json([
+                    'status' => 403,
+                    'message' => 'Forbidden',
+                ], 403);
+            }
+
+            if ($exception instanceof ValidationException) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Validation failed',
+                    'errors' => $exception->errors(),
+                ], 422);
+            }
+
+            if ($exception instanceof ModelNotFoundException) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Resource not found',
+                ], 404);
+            }
+
+            // Convert payload/data-shape runtime issues to client errors for API callers.
+            if (
+                $exception instanceof QueryException ||
+                $exception instanceof ErrorException ||
+                $exception instanceof \TypeError
+            ) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Invalid request payload',
+                ], 422);
+            }
+
+            $status = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
+            $message = $status >= 500
+                ? 'Server error'
+                : ($exception->getMessage() ?: 'Request failed');
+
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+            ], $status);
+        }
+
+        return parent::render($request, $exception);
+    }
+
+    private function shouldNotifyTelegram(Throwable $e): bool
+    {
+        if (!filter_var(env('TELEGRAM_EXCEPTION_ALERTS', false), FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
+        if (app()->environment('local', 'testing')) {
+            return false;
+        }
+
+        if ($e instanceof ValidationException || $e instanceof AuthenticationException || $e instanceof NotFoundHttpException) {
+            return false;
+        }
+
+        return true;
+    }
+
     private function sendTelegramMessage($message)
     {
         try {
-            Telegram::bot('mybot')->sendMessage([
-                'chat_id' => -1002130051998,
+            Telegram::bot(config('telegram.default', 'mybot'))->sendMessage([
+                'chat_id' => env('TELEGRAM_CHAT_ID'),
                 'text' => $message,
             ]);
         } catch (\Exception $e) {

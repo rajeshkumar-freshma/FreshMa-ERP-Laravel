@@ -57,18 +57,17 @@ return $request->user();
 
 // Auth Routes
 Route::group(['prefix' => 'v1'], function () {
-    Route::post('/login', [AuthenticatedSessionController::class, 'loginStore']);
+    Route::post('/login', [AuthenticatedSessionController::class, 'loginStore'])->middleware('throttle:api-auth');
 
-    Route::post('/verify-otp', [AuthenticatedSessionController::class, 'verifyOtp']);
-    Route::post('/verify_token', [AuthenticatedSessionController::class, 'apiVerifyToken']);
+    Route::post('/verify-otp', [AuthenticatedSessionController::class, 'verifyOtp'])->middleware('throttle:api-auth');
+    Route::post('/verify_token', [AuthenticatedSessionController::class, 'apiVerifyToken'])->middleware('throttle:api-auth');
 
-    // FCM Token Stoe APT
-    Route::post('/save-token', [AuthenticatedSessionController::class, 'saveToken']);
+    // FCM token update for authenticated admin app users.
+    Route::post('/save-token', [AuthenticatedSessionController::class, 'saveToken'])->middleware('auth:api');
 
     // Route::get('/users', [SampleDataController::class, 'getUsers']);
 
-    // Invoice number
-    Route::post('invoice-number', [CommonController::class, 'getinvoicecode']);
+    // Invoice number route is protected under auth:api group below.
 
     Route::group(['middleware' => ['auth:api']], function () {
         Route::post('notification/list', [CommonController::class, 'notification_list']);

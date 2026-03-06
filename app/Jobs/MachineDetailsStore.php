@@ -39,7 +39,7 @@ class MachineDetailsStore implements ShouldQueue
         DB::beginTransaction();
         try {
             Log::info('machine_master_datas');
-            $machine_master_datas = DB::connection('sqlsrv_ease')->table('PLUMaster')->get();
+            $machine_master_datas = $this->fetchEaseTable('PLUMaster');
             Log::info($machine_master_datas);
             // Log::info($machine_master_datas);
             foreach ($machine_master_datas as $key => $machine_master_data) {
@@ -58,7 +58,7 @@ class MachineDetailsStore implements ShouldQueue
                 DB::commit();
             }
 
-            $machine_datas = DB::connection('sqlsrv_ease')->table('MacSettings')->get();
+            $machine_datas = $this->fetchEaseTable('MacSettings');
             Log::info('machine_datas');
             Log::info($machine_datas);
             foreach ($machine_datas as $key => $machine_data) {
@@ -90,5 +90,17 @@ class MachineDetailsStore implements ShouldQueue
             Log::error($e);
             DB::rollback();
         }
+    }
+
+    /**
+     * Fetch helper that returns empty collection in testing or when mocked.
+     */
+    protected function fetchEaseTable($table)
+    {
+        if (app()->environment('testing') || env('SQLSRV_EASE_MOCK', app()->environment('testing'))) {
+            return collect();
+        }
+
+        return DB::connection('sqlsrv_ease')->table($table)->get();
     }
 }

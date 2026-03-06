@@ -2,7 +2,7 @@
 <td class="no-wrap d-flex">
     <div class="btn-group">
         @if (auth()->user()->can('Transport Type Edit') || auth()->user()->can('Transport Type View'))
-            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+            <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Action
             </button>
@@ -24,3 +24,4 @@
     </div>
 </td>
 <!--end::Action--->
+

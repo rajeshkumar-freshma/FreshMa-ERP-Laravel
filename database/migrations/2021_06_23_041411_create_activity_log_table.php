@@ -6,11 +6,17 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateActivityLogTable extends Migration
 {
-    protected $connection = 'sqlsrv_activity_log';
+    protected $connection = 'pgsql_activity_log';
 
     public function up()
     {
-        Schema::connection(config('activitylog.database_connection'))->create(config('activitylog.table_name'), function (Blueprint $table) {
+        $connection = config('activitylog.database_connection');
+        $tableName  = config('activitylog.table_name');
+
+        // Ensure a fresh table on secondary connection during migrate:fresh
+        Schema::connection($connection)->dropIfExists($tableName);
+
+        Schema::connection($connection)->create($tableName, function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('log_name')->nullable();
             $table->text('description');

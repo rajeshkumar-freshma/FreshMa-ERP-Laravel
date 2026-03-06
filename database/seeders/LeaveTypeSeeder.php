@@ -16,7 +16,7 @@ class LeaveTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('leave_types')->delete();
+        DB::table('leave_types')->truncate();;
         // Dummy data for LeaveType
         $leaveTypes = [
             ['name' => 'Annual Leave', 'status' => 1],

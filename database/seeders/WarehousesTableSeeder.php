@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Warehouse;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
 
 class WarehousesTableSeeder extends Seeder
 {
@@ -16,9 +18,9 @@ class WarehousesTableSeeder extends Seeder
     public function run()
     {
 
-        // \DB::table('warehouses')->delete();
+        \DB::table('warehouses')->truncate();
 
-        \DB::unprepared('SET IDENTITY_INSERT warehouses ON');
+        // \DB::unprepared('SET IDENTITY_INSERT warehouses ON');
 
         \DB::table('warehouses')->insert(array (
             0 =>
@@ -43,11 +45,20 @@ class WarehousesTableSeeder extends Seeder
                 'updated_by' => '1',
                 'created_at' => '2023-04-06 12:12:21.953',
                 'updated_at' => '2023-04-06 13:39:52.763',
-                'deleted_at' => '',
+                'deleted_at' => NULL,
             )
         ));
-
-        \DB::unprepared('SET IDENTITY_INSERT warehouses OFF');
+        // Ensure the sequence for the primary key is set to the max(id) after inserting explicit ids
+        try {
+            $connection = DB::getDriverName();
+            if ($connection === 'pgsql') {
+                DB::statement("SELECT setval(pg_get_serial_sequence('warehouses','id'), (SELECT COALESCE(MAX(id), 1) FROM warehouses));");
+            }
+        } catch (\Exception $ex) {
+            // If we can't adjust the sequence (e.g., sqlite), ignore and continue
+        }
+        // \DB::unprepared('SET IDENTITY_INSERT warehouses OFF');
+        // DB::commit();
         // $warehouses = [
         //     ['RRK RETAIL PVT LTD-CHINTARDRIPET',
         //         'rrk-retail-pvt-ltd-chintardripet',

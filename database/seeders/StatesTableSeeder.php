@@ -15,11 +15,11 @@ class StatesTableSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('states')->delete();
+        DB::table('states')->truncate();
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT states ON');
+        // DB::unprepared('SET IDENTITY_INSERT states ON');
 
         DB::table('states')->insert(array(
             0 =>
@@ -33158,7 +33158,7 @@ class StatesTableSeeder extends Seeder
             ),
         ));
 
-        DB::unprepared('SET IDENTITY_INSERT states OFF');
+        // DB::unprepared('SET IDENTITY_INSERT states OFF');
 
         DB::commit();
     }

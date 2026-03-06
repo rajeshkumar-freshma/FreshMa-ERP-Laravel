@@ -18,7 +18,12 @@ class VendorSalesAction extends Model
     protected static function booted()
     {
         static::creating(function ($data) {
-            $data->action_by = Auth::user()->id;
+            $data->action_by = static::resolveActorId();
         });
+    }
+
+    private static function resolveActorId(): int
+    {
+        return Auth::guard('admin')->id() ?? Auth::guard('api')->id() ?? Auth::id() ?? 1;
     }
 }

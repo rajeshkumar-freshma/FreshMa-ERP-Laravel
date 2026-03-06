@@ -97,7 +97,6 @@ class StoreStockExport1 implements FromCollection, WithHeadings, ShouldAutoSize,
                 'Closing Stock' => $stock['closingstock'],
             ];
         }
-        dd($rows);
         return $rows;
     }
 

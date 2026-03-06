@@ -16,9 +16,9 @@ class RoleHasPermissionsTableSeeder extends Seeder
     {
 
 
-        \DB::table('role_has_permissions')->delete();
+        \DB::table('role_has_permissions')->truncate();
 
-        \DB::unprepared('SET IDENTITY_INSERT role_has_permissions ON');
+        // \DB::unprepared('SET IDENTITY_INSERT role_has_permissions ON');
 
         \DB::table('role_has_permissions')->insert(array (
             0 =>
@@ -43,7 +43,8 @@ class RoleHasPermissionsTableSeeder extends Seeder
             ),
         ));
 
-        \DB::unprepared('SET IDENTITY_INSERT role_has_permissions OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT role_has_permissions OFF');
+        
 
     }
 }

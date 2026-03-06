@@ -17,9 +17,9 @@ class TransportTypesTableSeeder extends Seeder
     {
 
 
-        // \DB::table('transport_types')->delete();
+        \DB::table('transport_types')->truncate();
 
-        \DB::unprepared('SET IDENTITY_INSERT transport_types ON');
+        // \DB::unprepared('SET IDENTITY_INSERT transport_types ON');
 
         // \DB::table('transport_types')->insert(array (
         //     0 =>
@@ -79,7 +79,7 @@ class TransportTypesTableSeeder extends Seeder
         //     ),
         // ));
 
-        \DB::unprepared('SET IDENTITY_INSERT transport_types OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT transport_types OFF');
         $transport_types = array(
             array(
                 "transport_type" => "Bike",
@@ -112,5 +112,6 @@ class TransportTypesTableSeeder extends Seeder
         foreach ($transport_types as $transport_type) {
             TransportType::create($transport_type);
         }
+        
     }
 }

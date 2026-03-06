@@ -102,6 +102,7 @@ class VendorController extends Controller
             $vendor_detail = new VendorDetail();
             $vendor_detail->vendor_id = $user->id;
             $vendor_detail->vendor_commission = $request->vendor_commission;
+            $vendor_detail->joined_at = $request->joined_at;
             $vendor_detail->it_can_edit_on_billing = $request->it_can_edit_on_billing;
             $vendor_detail->remarks = $request->remarks;
             $vendor_detail->save();

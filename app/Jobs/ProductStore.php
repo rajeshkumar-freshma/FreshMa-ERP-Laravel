@@ -10,7 +10,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-use App\Models\LiveSalesBillDetail; // Live sale data details from Easse machine Model to store Our Database
 use App\Models\Product;
 use App\Models\Unit;
 use Log;
@@ -40,14 +39,17 @@ class ProductStore implements ShouldQueue
         Log::info('Product Job Executing');
         DB::beginTransaction();
         try {
-            $productList = DB::connection('sqlsrv_ease')->table('PLU_MC')->get();
+            $productList = $this->fetchEaseTable('PLU_MC');
             Log::info($productList);
             foreach ($productList as $key => $product) {
-                $slug = CommonComponent::slugCreate($product->pluname, null);
+                $externalCode = $this->resolveExternalCode($product);
+                $slug = CommonComponent::slugCreate($product->pluname.'-'.$externalCode, null);
                 Log::info("product->pluname");
                 Log::info($product->pluname);
 
-                $ERPProductData = Product::where('slug', $slug)->first();
+                $ERPProductData = Product::where('hsn_code', $externalCode)
+                    ->orWhere('sku_code', $externalCode)
+                    ->first();
                 Log::info("ERPProductData");
                 Log::info($ERPProductData);
                 if($product->uom == 'WEIGH') {
@@ -67,12 +69,8 @@ class ProductStore implements ShouldQueue
                     $product_store = new Product();
                     $product_store->name = $product->pluname;
                     $product_store->slug = $slug;
-                    if(($product->plucode != "" && $product->plucode!=null)) {
-                        $product_store->sku_code = $product->plucode;
-                    } else {
-                        $product_store->sku_code = $product->pluno;
-                    }
-                    $product_store->hsn_code = ($product->plucode != "" && $product->plucode!=null) ? $product->plucode : $product->pluno;
+                    $product_store->sku_code = $externalCode;
+                    $product_store->hsn_code = $externalCode;
                     $product_store->unit_id = $unit->id;
                     $product_store->status = 1;
                     $product_store->created_by = 1;
@@ -81,27 +79,30 @@ class ProductStore implements ShouldQueue
                 } else {
                     $ERPProductData->name = $product->pluname;
                     $ERPProductData->slug = $slug;
-                    if(($product->plucode != "" && $product->plucode!=null)) {
-                        $ERPProductData->sku_code = $product->plucode;
-                    }else {
-                        $ERPProductData->sku_code = $product->pluno;
-                    }
-                    // $ERPProductData->sku_code = ($product->plucode != "" && $product->plucode!=null) ? $product->plucode : NULL;
-                    $ERPProductData->hsn_code = ($product->plucode != "" && $product->plucode!=null) ? $product->plucode : $product->pluno;
+                    $ERPProductData->sku_code = $externalCode;
+                    $ERPProductData->hsn_code = $externalCode;
                     $ERPProductData->unit_id = $unit->id;
                     $ERPProductData->status = 1;
-                    $ERPProductData->created_by = 1;
                     $ERPProductData->updated_by = 1;
                     $ERPProductData->save();
                 }
-                DB::commit();
             }
+            DB::commit();
 
             Log::info('Product Job completed');
         } catch (\Exception $e) {
             Log::error($e);
             DB::rollback();
         }
+    }
+
+    protected function resolveExternalCode($product): string
+    {
+        if (!empty($product->plucode)) {
+            return (string) $product->plucode;
+        }
+
+        return (string) $product->pluno;
     }
 
     public function storeunit($unit_name, $unit_short_code, $base_unit, $allow_decimal, $operator, $operation_value, $status, $created_by, $updated_by)
@@ -119,5 +120,18 @@ class ProductStore implements ShouldQueue
         $unit->save();
 
         return $unit;
+    }
+
+    /**
+     * Fetch data from the EASSE SQL Server. In testing or when the connection
+     * is disabled, return an empty collection to avoid external dependency.
+     */
+    protected function fetchEaseTable($table)
+    {
+        if (app()->environment('testing') || env('SQLSRV_EASE_MOCK', app()->environment('testing'))) {
+            return collect();
+        }
+
+        return DB::connection('sqlsrv_ease')->table($table)->get();
     }
 }

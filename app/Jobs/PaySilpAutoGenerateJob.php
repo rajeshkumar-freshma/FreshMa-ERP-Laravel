@@ -49,14 +49,13 @@ class PaySilpAutoGenerateJob implements ShouldQueue
             foreach ($payrolltemplates as $payrolltemplate) {
                 Log::info("payrolltemplate");
                 Log::info($payrolltemplate);
-                print_r($payrolltemplate);
                 // Fetch employee attendance for leave days in the last month
                 $employeeAttendanceLeave = StaffAttendanceDetails::where('staff_id', $payrolltemplate->employee_id)
                     ->whereMonth('in_time', $lastMonthDays)
                     ->whereYear('in_time', $lastYear)
                     ->where('is_present', 0)
                     ->count();
-                $amount = UserAdvance::where('user_id', $payrolltemplate->employee_id)
+                $userAdvanceAmount = UserAdvance::where('user_id', $payrolltemplate->employee_id)
                     ->where('status', 1)
                     ->where('type', 1)
                     ->value('amount');
@@ -65,7 +64,7 @@ class PaySilpAutoGenerateJob implements ShouldQueue
                 $payrollData = json_decode($payrolltemplate->payroll_templates, true);
 
                 // Ensure that $payrollData is an array and is not empty
-                if (is_array($payrollData) && !empty($payrollData)) {
+                    if (is_array($payrollData) && !empty($payrollData)) {
                     $status1Sum = 0;
                     $status0Sum = 0;
 
@@ -76,13 +75,13 @@ class PaySilpAutoGenerateJob implements ShouldQueue
 
                         // Check if the payroll type exists and has a valid status
                         if ($payrollType && in_array($payrollType->payroll_types, [0, 1])) {
-                            $amount = $item['amount'];
+                            $itemAmount = isset($item['amount']) ? floatval($item['amount']) : 0;
 
                             // Check the status and sum amounts accordingly
                             if ($payrollType->payroll_types == 1) {
-                                $status1Sum += $amount;
+                                $status1Sum += $itemAmount;
                             } elseif ($payrollType->payroll_types == 0) {
-                                $status0Sum += $amount;
+                                $status0Sum += $itemAmount;
                             }
                         }
                     }
@@ -93,32 +92,41 @@ class PaySilpAutoGenerateJob implements ShouldQueue
                     Log::info("status0Sum");
                     Log::info($status0Sum);
                     // Calculate the total amount
-                    $totalAmount = array_sum(array_column($payrollData, 'amount'));
+                    $totalAmount = array_sum(array_map('floatval', array_column($payrollData, 'amount')));
 
                     // Calculate the deduction based on leave days
                     $leaveDeduction = ($totalAmount / $lastMonthDaysCount) * $employeeAttendanceLeave;
 
                     // Subtract the leave deduction from the total amount
-                    $netSalary = $totalAmount - $leaveDeduction - $amount - $status0Sum;
+                    // Calculate net salary and persist inside a DB transaction
+                    $netSalary = $totalAmount - $leaveDeduction - floatval($userAdvanceAmount) - $status0Sum;
 
-                    $payroll = new Payroll();
-                    $payroll->employee_id = $payrolltemplate->employee_id;
-                    $payroll->gross_salary = $netSalary;
-                    $payroll->month = $lastMonthDays;
-                    $payroll->year = $lastYear;
-                    $payroll->loss_of_pay_days = $employeeAttendanceLeave;
-                    $payroll->no_of_working_days = $lastMonthDaysCount;
-                    $payroll->status = $payrolltemplate->status;
-                    $payroll->save();
+                    DB::beginTransaction();
+                    try {
+                        $payroll = new Payroll();
+                        $payroll->employee_id = $payrolltemplate->employee_id;
+                        $payroll->gross_salary = $netSalary;
+                        $payroll->month = $lastMonthDays;
+                        $payroll->year = $lastYear;
+                        $payroll->loss_of_pay_days = $employeeAttendanceLeave;
+                        $payroll->no_of_working_days = $lastMonthDaysCount;
+                        $payroll->status = $payrolltemplate->status;
+                        $payroll->save();
 
-                    foreach ($payrollData as $data) {
-                        Log::info("data");
-                        Log::info($data);
-                        $payrollDetail = new PayrollDetail();
-                        $payrollDetail->payroll_id = $payroll->id;
-                        $payrollDetail->payroll_type_id = $data['payroll_type_id'];
-                        $payrollDetail->amount = $data['amount'];
-                        $payrollDetail->save();
+                        foreach ($payrollData as $data) {
+                            Log::info("data");
+                            Log::info($data);
+                            $payrollDetail = new PayrollDetail();
+                            $payrollDetail->payroll_id = $payroll->id;
+                            $payrollDetail->payroll_type_id = $data['payroll_type_id'];
+                            $payrollDetail->amount = $data['amount'];
+                            $payrollDetail->save();
+                        }
+
+                        DB::commit();
+                    } catch (\Exception $ex) {
+                        DB::rollBack();
+                        Log::error('Failed saving payroll for template ' . $payrolltemplate->id . ': ' . $ex->getMessage());
                     }
                 } else {
                     // Handle the case where $payrollData is empty or not an array

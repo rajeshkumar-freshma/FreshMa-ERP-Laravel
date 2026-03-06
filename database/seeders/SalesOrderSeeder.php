@@ -22,14 +22,36 @@ class SalesOrderSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('sales_orders')->delete();
+        DB::table('sales_orders')->truncate();
+
+        $warehouseId = DB::table('warehouses')->value('id');
+        $storeId     = DB::table('stores')->value('id');
+        $vendorId    = DB::table('users')->where('user_type', 1)->value('id');
+
+        if (!$warehouseId) {
+            $this->call(WarehousesTableSeeder::class);
+            $warehouseId = DB::table('warehouses')->value('id');
+        }
+        if (!$storeId) {
+            $this->call(StoresTableSeeder::class);
+            $storeId = DB::table('stores')->value('id');
+        }
+        if (!$vendorId) {
+            $this->call(VendorTableSeeder::class);
+            $vendorId = DB::table('users')->where('user_type', 1)->value('id');
+        }
+
+        if (!$warehouseId || !$storeId || !$vendorId) {
+            $this->command->warn('Missing warehouse, store, or vendor. Skipping SalesOrderSeeder.');
+            return;
+        }
         // Dummy data for SalesOrder
         $salesOrderData = [
             'sales_from' => 2,
             'sales_type' => 2,
-            'warehouse_id' => 1, // Replace with an existing warehouse ID
-            'store_id' => 1,     // Replace with an existing store ID
-            'vendor_id' => 4,    // Replace with an existing vendor ID
+            'warehouse_id' => $warehouseId,
+            'store_id' => $storeId,
+            'vendor_id' => $vendorId,
             'invoice_number' => 'INV123456',
             'delivered_date' => Carbon::now()->addDays(7)->format('Y-m-d'),
             'status' => 10, // Assuming 10 means completed or processed

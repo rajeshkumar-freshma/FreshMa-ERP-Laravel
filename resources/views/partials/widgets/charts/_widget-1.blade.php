@@ -1,3 +1,6 @@
+    @once
+        <link href="{{ asset('assets/css/freshma-dashboard.css') }}" rel="stylesheet" type="text/css" />
+    @endonce
     <!--begin::Card-->
 
     <!--begin::Content container-->

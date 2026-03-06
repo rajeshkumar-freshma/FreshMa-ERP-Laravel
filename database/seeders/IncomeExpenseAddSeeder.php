@@ -17,12 +17,12 @@ class IncomeExpenseAddSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('income_expense_transactions')->delete();
-        DB::table('income_expense_transaction_details')->delete();
+        DB::table('income_expense_transactions')->truncate();
+        DB::table('income_expense_transaction_details')->truncate();
 
         DB::beginTransaction();
 
-        DB::unprepared('SET IDENTITY_INSERT income_expense_transactions ON');
+        // DB::unprepared('SET IDENTITY_INSERT income_expense_transactions ON');
 
         // Dummy data for IncomeExpenseTransaction
         $incomeExpenseData = [
@@ -70,7 +70,7 @@ class IncomeExpenseAddSeeder extends Seeder
             }
         }
 
-        DB::unprepared('SET IDENTITY_INSERT income_expense_transactions OFF');
+        // DB::unprepared('SET IDENTITY_INSERT income_expense_transactions OFF');
 
         DB::commit();
 

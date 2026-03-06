@@ -253,8 +253,8 @@ class Theme
      */
     function includeFavicon()
     {
-        $small_image = \Storage::disk('s3')->temporaryUrl('media/logos/small_logo.png', '+20 minutes');
-        return sprintf('<link rel="shortcut icon" href="%s" />', $small_image);
+        // $small_image = \Storage::disk('s3')->temporaryUrl('media/logos/small_logo.png', '+20 minutes');
+        // return sprintf('<link rel="shortcut icon" href="%s" />', $small_image);
     }
 
     /**

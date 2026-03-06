@@ -17,9 +17,9 @@ class CategoriesTableSeeder extends Seeder
     {
 
 
-        DB::table('categories')->delete();
+        DB::table('categories')->truncate();
 
-        DB::unprepared('SET IDENTITY_INSERT categories ON');
+        // DB::unprepared('SET IDENTITY_INSERT categories ON');
 
         DB::table('categories')->insert(array (
             0 =>
@@ -150,7 +150,9 @@ class CategoriesTableSeeder extends Seeder
             ),
         ));
 
-        \DB::unprepared('SET IDENTITY_INSERT categories OFF');
+        // \DB::unprepared('SET IDENTITY_INSERT categories OFF');
+
+       
 
 
     }

@@ -18,8 +18,13 @@ class BankAccount extends Model
     protected static function booted()
     {
         static::creating(function ($data) {
-            $data->created_by = Auth::user()->id;
+            $data->created_by = static::resolveActorId();
         });
+    }
+
+    private static function resolveActorId(): int
+    {
+        return Auth::guard('admin')->id() ?? Auth::guard('api')->id() ?? Auth::id() ?? 1;
     }
 
     /* Relationship Container */

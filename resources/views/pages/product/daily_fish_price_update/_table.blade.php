@@ -1,5 +1,8 @@
 <!--begin::Table-->
-{{ $dataTable->table() }}
+@include('pages.partials._datatable-toolbar-template', [
+    'tableId' => 'dailyfishpriceupdate-table',
+    'dataTable' => $dataTable
+])
 <!--end::Table-->
 
 {{-- Inject Scripts --}}
@@ -11,17 +14,12 @@
         $(document).ready(function() {
             $(".fsh_flat_datepicker").flatpickr();
 
-            var table = $('#daily_price_updates-table');
+            var table = $('#dailyfishpriceupdate-table');
             table.on('preXhr.dt', function(e, settings, data){
                 data.product_id = $('#product_id').val();
                 data.store_id = $('#store_id').val();
                 data.date = $('#date').val();
             });
-
-            $('.filter_button').on('click', function() {
-                table.DataTable().ajax.reload();
-                return false;
-            })
         });
     </script>
 @endsection

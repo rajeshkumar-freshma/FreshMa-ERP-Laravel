@@ -21,6 +21,7 @@ use App\Models\VendorIndentRequest;
 use App\Models\WarehouseIndentRequest;
 use Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use \Carbon\Carbon;
 
@@ -43,9 +44,9 @@ class HomeController extends Controller
 
         $data['payment_details'] = CashRegisterTransaction::where(function ($query) use ($cashregister_date, $store_id) {
             if ($cashregister_date != null) {
-                $query->whereDate('transaction_datetime', Carbon::parse($cashregister_date)->format('Y-m-d 00:00:00'));
+                $query->whereDate('transaction_datetime', Carbon::parse($cashregister_date)->format('Y-m-d'));
             } else {
-                $query->whereDate('transaction_datetime', Carbon::today()->format('Y-m-d 00:00:00'));
+                $query->whereDate('transaction_datetime', Carbon::today()->format('Y-m-d'));
             }
             if ($store_id != null) {
                 $query->whereIn('cash_register_transactions.store_id', $store_id);
@@ -66,9 +67,9 @@ class HomeController extends Controller
 
         $creditSale = SalesOrder::where(function ($query) use ($cashregister_date, $store_id) {
             if ($cashregister_date != null) {
-                $query->whereDate('delivered_date', Carbon::parse($cashregister_date)->format('Y-m-d 00:00:00'));
+                $query->whereDate('delivered_date', Carbon::parse($cashregister_date)->format('Y-m-d'));
             } else {
-                $query->whereDate('delivered_date', Carbon::today()->format('Y-m-d 00:00:00'));
+                $query->whereDate('delivered_date', Carbon::today()->format('Y-m-d'));
             }
             if ($store_id != null) {
                 $query->whereIn('store_id', $store_id);
@@ -81,9 +82,9 @@ class HomeController extends Controller
 
         $salesreturn = SalesOrderReturn::where(function ($query) use ($cashregister_date, $store_id) {
             if ($cashregister_date != null) {
-                $query->whereDate('return_date', Carbon::parse($cashregister_date)->format('Y-m-d 00:00:00'));
+                $query->whereDate('return_date', Carbon::parse($cashregister_date)->format('Y-m-d'));
             } else {
-                $query->whereDate('return_date', Carbon::today()->format('Y-m-d 00:00:00'));
+                $query->whereDate('return_date', Carbon::today()->format('Y-m-d'));
             }
             if ($store_id != null) {
                 $query->whereIn('from_store_id', $store_id);
@@ -124,28 +125,33 @@ class HomeController extends Controller
 
         // Monthly Orders
         $purchase_order['months'] = $sales_order['months'] = $incomeexpense['months'] = [];
-        $purchase_order['count'] = $sales_order['count'] = $income['amount'] = $Expense['amount'] = [];
+        $purchase_order['count'] = $sales_order['count'] = $income['amount'] = $expense['amount'] = [];
 
+        $monthKeys = [];
         for ($i = 1; $i <= 12; $i++) {
             $date = $startDate->copy()->addMonths($i);
-            $month = $date->format('m');
-            $year = $date->format('Y');
+            $monthKeys[] = $date->format('Y-m');
             $formattedMonth = $date->format('M Y');
-
             $purchase_order['months'][] = $formattedMonth;
             $sales_order['months'][] = $formattedMonth;
             $incomeexpense['months'][] = $formattedMonth;
+        }
 
-            $purchase_order['count'][] = PurchaseOrder::whereMonth('delivery_date', $month)
-                ->whereYear('delivery_date', $year)->where('payment_status', 1)->count();
-            $sales_order['count'][] = SalesOrder::whereMonth('delivered_date', $month)
-                ->whereYear('delivered_date', $year)->where('payment_status', 1)->where('status', 8)->count();
+        $salesOrderCounts = $this->monthlyCountMap('sales_orders', 'delivered_date', function ($query) {
+            $query->where('payment_status', 1)->where('status', 8);
+        }, $startDate, $endDate);
 
-            // Accumulate income and expense for each month
-            $income['amount'][] = IncomeExpenseTransaction::whereMonth('transaction_datetime', $month)
-                ->whereYear('transaction_datetime', $year)->where('income_expense_type_id', 1)->where('status', 1)->sum('total_amount');
-            $expense['amount'][] = IncomeExpenseTransaction::whereMonth('transaction_datetime', $month)
-                ->whereYear('transaction_datetime', $year)->where('income_expense_type_id', 2)->where('status', 1)->sum('total_amount');
+        $purchaseOrderCounts = $this->monthlyCountMap('purchase_orders', 'delivery_date', function ($query) {
+            $query->where('payment_status', 1);
+        }, $startDate, $endDate);
+
+        $incomeExpenseMap = $this->monthlyIncomeExpenseMap($startDate, $endDate);
+
+        foreach ($monthKeys as $monthKey) {
+            $purchase_order['count'][] = (int) ($purchaseOrderCounts[$monthKey] ?? 0);
+            $sales_order['count'][] = (int) ($salesOrderCounts[$monthKey] ?? 0);
+            $income['amount'][] = (float) ($incomeExpenseMap[$monthKey]['income'] ?? 0);
+            $expense['amount'][] = (float) ($incomeExpenseMap[$monthKey]['expense'] ?? 0);
         }
         // Branch Wiase Report
 
@@ -162,70 +168,124 @@ class HomeController extends Controller
 
     public function branchWiseSalesOrders()
     {
-        $storeWiseSalesOrdersCount = [];
+        $stores = Store::query()->select('id', 'store_name')->get();
+        $salesCounts = SalesOrder::query()
+            ->select('store_id', DB::raw('COUNT(*) as total'))
+            ->where('payment_status', 1)
+            ->where('status', 8)
+            ->whereNotNull('store_id')
+            ->groupBy('store_id')
+            ->pluck('total', 'store_id');
 
-        $stores = Store::all();
-        foreach ($stores as $store) {
-            $store_id = $store->id;
-            $storeName = $store->store_name;
-
-            $storeWiseCount = SalesOrder::where('store_id', $store_id)
-                ->where('payment_status', 1)
-                ->where('status', 8)
-                ->count();
-
-            $storeWiseSalesOrdersCount[$storeName] = $storeWiseCount;
-        }
-
-        // Return store-wise sales orders count
-        return $storeWiseSalesOrdersCount;
+        return $this->mapStoreWiseCounts($stores, $salesCounts);
     }
 
     public function branchWiseProductTransfer()
     {
-        $storeWiseProductTransferCount = [];
+        $stores = Store::query()->select('id', 'store_name')->get();
+        $transferCounts = ProductTransfer::query()
+            ->select('from_store_id', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('from_store_id')
+            ->groupBy('from_store_id')
+            ->pluck('total', 'from_store_id');
 
-        $stores = Store::all();
-        foreach ($stores as $store) {
-            $store_id = $store->id;
-            $storeName = $store->store_name;
-
-            $storeWiseCount = ProductTransfer::where('from_store_id', $store_id)
-                ->count();
-            $storeWiseProductTransferCount[$storeName] = $storeWiseCount;
-        }
-
-        // Return store-wise Product Transfer count
-        return $storeWiseProductTransferCount;
+        return $this->mapStoreWiseCounts($stores, $transferCounts);
     }
 
     public function branchwiseIncomeAndExpenseData()
     {
-        $stores = Store::all();
-        $branchwiseIncomeAndExpenseData = [];
+        $stores = Store::query()->select('id', 'store_name')->get();
+        $rows = IncomeExpenseTransaction::query()
+            ->select('store_id', 'income_expense_type_id', DB::raw('SUM(total_amount) as total_amount'))
+            ->where('status', 1)
+            ->whereIn('income_expense_type_id', [1, 2])
+            ->whereNotNull('store_id')
+            ->groupBy('store_id', 'income_expense_type_id')
+            ->get();
 
+        $grouped = $rows->groupBy('store_id');
+        $result = [];
         foreach ($stores as $store) {
-            $store_id = $store->id;
-            $storeName = $store->store_name;
+            $storeRows = $grouped->get($store->id, collect());
+            $income = (float) optional($storeRows->firstWhere('income_expense_type_id', 1))->total_amount;
+            $expense = (float) optional($storeRows->firstWhere('income_expense_type_id', 2))->total_amount;
 
-            $totalIncome = IncomeExpenseTransaction::where('store_id', $store_id)
-                ->where('income_expense_type_id', 1)
-                ->where('status', 1)
-                ->sum('total_amount');
-
-            $totalExpense = IncomeExpenseTransaction::where('store_id', $store_id)
-                ->where('income_expense_type_id', 2)
-                ->where('status', 1)
-                ->sum('total_amount');
-
-            $branchwiseIncomeAndExpenseData[$storeName] = [
-                'totalIncome' => $totalIncome,
-                'totalExpense' => $totalExpense,
+            $result[$store->store_name] = [
+                'totalIncome' => $income,
+                'totalExpense' => $expense,
             ];
         }
 
-        // Return branch-wise income and expense data
-        return $branchwiseIncomeAndExpenseData;
+        return $result;
+    }
+
+    protected function mapStoreWiseCounts(Collection $stores, Collection $counts): array
+    {
+        $result = [];
+        foreach ($stores as $store) {
+            $result[$store->store_name] = (int) ($counts[$store->id] ?? 0);
+        }
+
+        return $result;
+    }
+
+    protected function monthlyCountMap(string $table, string $dateColumn, \Closure $scope, Carbon $startDate, Carbon $endDate): array
+    {
+        $monthExpr = $this->monthKeyExpression($dateColumn);
+
+        $query = DB::table($table)
+            ->selectRaw($monthExpr . ' as month_key, COUNT(*) as total')
+            ->whereBetween($dateColumn, [$startDate->copy()->startOfMonth(), $endDate->copy()->endOfMonth()]);
+
+        $scope($query);
+
+        return $query
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key')
+            ->map(fn ($count) => (int) $count)
+            ->toArray();
+    }
+
+    protected function monthlyIncomeExpenseMap(Carbon $startDate, Carbon $endDate): array
+    {
+        $monthExpr = $this->monthKeyExpression('transaction_datetime');
+        $rows = DB::table('income_expense_transactions')
+            ->selectRaw($monthExpr . ' as month_key, income_expense_type_id, SUM(total_amount) as total')
+            ->where('status', 1)
+            ->whereIn('income_expense_type_id', [1, 2])
+            ->whereBetween('transaction_datetime', [$startDate->copy()->startOfMonth(), $endDate->copy()->endOfMonth()])
+            ->groupBy('month_key', 'income_expense_type_id')
+            ->get();
+
+        $map = [];
+        foreach ($rows as $row) {
+            if (!isset($map[$row->month_key])) {
+                $map[$row->month_key] = ['income' => 0, 'expense' => 0];
+            }
+            if ((int) $row->income_expense_type_id === 1) {
+                $map[$row->month_key]['income'] = (float) $row->total;
+            } elseif ((int) $row->income_expense_type_id === 2) {
+                $map[$row->month_key]['expense'] = (float) $row->total;
+            }
+        }
+
+        return $map;
+    }
+
+    protected function monthKeyExpression(string $column): string
+    {
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            return "to_char({$column}, 'YYYY-MM')";
+        }
+        if ($driver === 'mysql') {
+            return "DATE_FORMAT({$column}, '%Y-%m')";
+        }
+        if ($driver === 'sqlite') {
+            return "strftime('%Y-%m', {$column})";
+        }
+
+        return "to_char({$column}, 'YYYY-MM')";
     }
 
     public function getstate(Request $request)

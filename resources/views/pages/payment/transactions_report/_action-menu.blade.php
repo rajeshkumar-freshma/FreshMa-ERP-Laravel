@@ -1,11 +1,10 @@
 <!--begin::Action-->
-<td class="no-wrap d-flex">
-    <div class="btn-group">
-        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            Action
-        </button>
-        <ul class="dropdown-menu">
+<div class="btn-group">
+    <button type="button" class="btn btn-primary btn-sm btn-xs dropdown-toggle" data-bs-toggle="dropdown"
+        aria-expanded="false">
+        Action
+    </button>
+    <ul class="dropdown-menu">
             {{-- @if (auth()->user()->can('Transactions Download') || auth()->user()->can('Transactions View')) --}}
             @if (@$model->transaction_type == 1)
                 <a class="dropdown-item" href="{{ route('purchase-invoice', ['id' => $model->id]) }}">
@@ -34,7 +33,6 @@
             {{-- @endif --}}
 
 
-        </ul>
-    </div>
-</td>
+    </ul>
+</div>
 <!--end::Action-->

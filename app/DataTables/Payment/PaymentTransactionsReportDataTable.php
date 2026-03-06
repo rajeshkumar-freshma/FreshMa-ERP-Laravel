@@ -172,7 +172,7 @@ class PaymentTransactionsReportDataTable extends DataTable
         return $this->builder()
             ->setTableId('payment_transactions-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax('', 'data.date_from = $("#payment_transactions-table-date-from").val(); data.date_to = $("#payment_transactions-table-date-to").val(); data.status = $("#payment_transactions-table-status-filter").val(); data.from_date = $("#from_date").val() || $("#payment_transactions-table-date-from").val(); data.to_date = $("#to_date").val() || $("#payment_transactions-table-date-to").val(); data.transaction_type = $("#transaction_type").val(); data.type = $("#type").val(); data.payment_type_id = $("#payment_type_id").val();')
             ->stateSave(false)
             ->responsive()
             ->autoWidth(true)
