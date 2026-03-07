@@ -46,10 +46,10 @@ class Kernel extends ConsoleKernel
             $schedule->command('sale_order:store')->cron($salesSyncCron);
         }
 
-        if ($this->app->runningUnitTests() || filter_var(env('CRON_QUEUE_WORKER_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
-            $queueWorkerCron = env('CRON_QUEUE_WORKER_CRON', '* * * * *');
-            $schedule->command('queue:work --stop-when-empty')->cron($queueWorkerCron)->withoutOverlapping();
-        }
+        // if ($this->app->runningUnitTests() || filter_var(env('CRON_QUEUE_WORKER_ENABLED', true), FILTER_VALIDATE_BOOLEAN)) {
+        //     $queueWorkerCron = env('CRON_QUEUE_WORKER_CRON', '* * * * *');
+        //     $schedule->command('queue:work --stop-when-empty')->cron($queueWorkerCron)->withoutOverlapping();
+        // }
     }
 
     /**
