@@ -119,8 +119,8 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'encrypt' => env('DB_ENCRYPT_SECOND'),
-            'trust_server_certificate' => env('DB_TRUST_CRT_SECOND'),
+            'encrypt' => env('DB_ENCRYPT_SECOND', 'no'),
+            'trust_server_certificate' => env('DB_TRUST_CRT_SECOND', true),
         ],
 
         'sqlsrv_activity_log' => [
