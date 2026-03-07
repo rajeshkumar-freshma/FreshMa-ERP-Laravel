@@ -93,34 +93,24 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => false,
-            'encrypt' => env('DB_ENCRYPT'),
-            'trust_server_certificate' => env('DB_TRUST_CRT'),
+            'encrypt' => 'no',
+            'trust_server_certificate' => true,
+            //'encrypt' => env('DB_ENCRYPT'),
+            //'trust_server_certificate' => env('DB_TRUST_CRT'),
         ],
 
         'sqlsrv_ease' => [
-            'read' => [
-                'host' => [
-                    ENV('DB_HOST_SECOND'),
-                    '127.0.0.1',
-                ],
-            ],
-            'write' => [
-                'host' => [
-                    ENV('DB_HOST_SECOND'),
-                ],
-            ],
             'driver' => 'sqlsrv',
-            'url' => env('DATABASE_URL_SECOND'),
-            'host' => env('DB_HOST_SECOND', 'localhost'),
+            'host' => env('DB_HOST_SECOND'),
             'port' => env('DB_PORT_SECOND', '1433'),
-            'database' => env('DB_DATABASE_SECOND', 'forge'),
-            'username' => env('DB_USERNAME_SECOND', 'forge'),
-            'password' => env('DB_PASSWORD_SECOND', ''),
+            'database' => env('DB_DATABASE_SECOND'),
+            'username' => env('DB_USERNAME_SECOND'),
+            'password' => env('DB_PASSWORD_SECOND'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'encrypt' => env('DB_ENCRYPT_SECOND', 'no'),
-            'trust_server_certificate' => env('DB_TRUST_CRT_SECOND', true),
+            'encrypt' => 'no',
+            'trust_server_certificate' => true,
         ],
 
         'sqlsrv_activity_log' => [
